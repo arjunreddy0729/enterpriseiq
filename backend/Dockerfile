@@ -36,7 +36,14 @@ RUN useradd --create-home --uid 1000 appuser \
 # succeeds, then install. This layer is cached and only re-runs when
 # pyproject.toml changes - not on every source edit.
 COPY pyproject.toml ./
+# Install the CPU-only torch build FIRST, from PyTorch's cpu index.
+#
+# `pip install torch` on linux/amd64 defaults to the CUDA build and drags in
+# ~2.9GB of nvidia-* wheels plus ~650MB of triton - GPU kernels that can never
+# execute in this image. Pinning the cpu index first means the ml extra sees
+# torch already satisfied and leaves it alone. Image: ~8.9GB -> ~2.5GB.
 RUN mkdir -p app && touch app/__init__.py \
+    && pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch \
     && pip install --no-cache-dir -e ".[ml,parsers,dev]"
 
 # --- Source layer ----------------------------------------------------------
