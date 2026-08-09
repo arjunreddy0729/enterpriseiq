@@ -1,0 +1,348 @@
+# ---------------------------------------------------------------------------
+# EnterpriseIQ demo corpus manifest
+#
+# Northwind Systems, Inc. is entirely fictional. Every document under this
+# directory was written for this project. No real company data appears here,
+# and this corpus is safe to publish publicly.
+#
+# This file is the reproducible definition of the corpus AND of its permission
+# topology. `access_groups` is what ends up in chunks.access_group_ids and
+# therefore what the retrieval-time ACL predicate enforces. Change a value here
+# and the permission tests change with it.
+#
+# The interesting cases, deliberately:
+#   * compensation-policy.md and performance-review-process.md are [hr] only.
+#     An engineering user asking about them must get an abstention, not an
+#     answer - and the restricted text must never enter the model's context.
+#   * procurement-thresholds.md and revenue-recognition.md are [finance] only.
+#   * security-incident-legal-playbook.md is [legal] only.
+#   * vendor-policy.md is [legal, finance] - a two-group document.
+#   * Sofia Reyes is in engineering AND finance, so they can read the finance
+#     restricted docs but not the HR ones. That exercises array overlap rather
+#     than single-group matching.
+# ---------------------------------------------------------------------------
+
+version: 1
+company: Northwind Systems, Inc.
+description: >-
+  Synthetic internal knowledge base for a fictional B2B logistics and
+  embedded-payments SaaS company, used to demonstrate and benchmark
+  permission-aware retrieval.
+
+groups:
+  - all-employees
+  - engineering
+  - hr
+  - finance
+  - legal
+
+documents:
+  # =========================================================================
+  # ENGINEERING - visible to engineering only
+  # =========================================================================
+  - path: engineering/authentication.md
+    title: Authentication Architecture
+    source_type: markdown
+    department: engineering
+    doc_type: architecture
+    owner: priya.raman@northwind.example
+    classification: internal
+    access_groups: [engineering]
+    effective_date: 2025-11-04
+    source_updated_at: 2026-05-19T14:02:00Z
+    metadata:
+      services: [identity-service, api-gateway]
+      tags: [oauth2, jwt, jwks, security]
+
+  - path: engineering/payment-service.md
+    title: Payments Service Architecture
+    source_type: markdown
+    department: engineering
+    doc_type: architecture
+    owner: dev.shah@northwind.example
+    classification: internal
+    access_groups: [engineering]
+    effective_date: 2025-09-22
+    source_updated_at: 2026-06-02T10:15:00Z
+    metadata:
+      services: [payments-service]
+      tags: [payments, psp, idempotency, webhooks]
+
+  - path: engineering/api-gateway.md
+    title: API Gateway
+    source_type: markdown
+    department: engineering
+    doc_type: architecture
+    owner: priya.raman@northwind.example
+    classification: internal
+    access_groups: [engineering]
+    effective_date: 2025-08-11
+    source_updated_at: 2026-04-28T09:30:00Z
+    metadata:
+      services: [api-gateway]
+      tags: [rate-limiting, routing, versioning]
+
+  - path: engineering/deployment-runbook.md
+    title: Deployment Runbook
+    source_type: markdown
+    department: engineering
+    doc_type: runbook
+    owner: sofia.reyes@northwind.example
+    classification: internal
+    access_groups: [engineering]
+    effective_date: 2025-10-06
+    source_updated_at: 2026-05-30T16:45:00Z
+    metadata:
+      tags: [kubernetes, argocd, blue-green, rollback]
+
+  - path: engineering/incident-response.md
+    title: Incident Response Process
+    source_type: markdown
+    department: engineering
+    doc_type: runbook
+    owner: sofia.reyes@northwind.example
+    classification: internal
+    access_groups: [engineering]
+    effective_date: 2025-07-15
+    source_updated_at: 2026-03-11T11:20:00Z
+    metadata:
+      tags: [oncall, severity, postmortem]
+
+  - path: engineering/observability-standards.md
+    title: Observability Standards
+    source_type: markdown
+    department: engineering
+    doc_type: standard
+    owner: sofia.reyes@northwind.example
+    classification: internal
+    access_groups: [engineering]
+    effective_date: 2026-01-20
+    source_updated_at: 2026-04-07T13:05:00Z
+    metadata:
+      tags: [opentelemetry, prometheus, logging, slo]
+
+  - path: engineering/adr-0007-postgres-partitioning.md
+    title: "ADR-0007: Partitioning the ledger payments table"
+    source_type: markdown
+    department: engineering
+    doc_type: adr
+    owner: dev.shah@northwind.example
+    classification: internal
+    access_groups: [engineering]
+    effective_date: 2026-02-24
+    source_updated_at: 2026-02-24T08:00:00Z
+    metadata:
+      adr_number: 7
+      status: accepted
+      tags: [postgres, partitioning, ledger-service]
+
+  - path: engineering/oncall-rotation.txt
+    title: On-Call Rotation Handbook
+    source_type: txt
+    department: engineering
+    doc_type: handbook
+    owner: sofia.reyes@northwind.example
+    classification: internal
+    access_groups: [engineering]
+    effective_date: 2025-06-02
+    source_updated_at: 2026-05-04T17:40:00Z
+    metadata:
+      tags: [oncall, rotation, escalation]
+
+  # =========================================================================
+  # HR - two restricted, three company-wide
+  # =========================================================================
+  - path: hr/compensation-policy.md
+    title: Compensation Policy
+    source_type: markdown
+    department: hr
+    doc_type: policy
+    owner: marcus.webb@northwind.example
+    # RESTRICTED. This is the document the permission demo is built around.
+    classification: restricted
+    access_groups: [hr]
+    effective_date: 2026-01-05
+    source_updated_at: 2026-03-24T09:00:00Z
+    metadata:
+      tags: [compensation, levels, equity, bonus]
+      sensitivity_note: Must never reach a non-HR user's context window.
+
+  - path: hr/performance-review-process.md
+    title: Performance Review Process
+    source_type: markdown
+    department: hr
+    doc_type: policy
+    owner: aisha.nkemelu@northwind.example
+    classification: restricted
+    access_groups: [hr]
+    effective_date: 2025-09-01
+    source_updated_at: 2026-03-24T09:10:00Z
+    metadata:
+      tags: [performance, calibration, pip]
+
+  - path: hr/leave-policy.md
+    title: Leave and Time Off Policy
+    source_type: markdown
+    department: hr
+    doc_type: policy
+    owner: marcus.webb@northwind.example
+    classification: internal
+    access_groups: [all-employees]
+    effective_date: 2025-05-12
+    source_updated_at: 2026-01-08T12:00:00Z
+    metadata:
+      tags: [pto, sick-leave, parental-leave]
+
+  - path: hr/benefits.md
+    title: Employee Benefits Guide
+    source_type: markdown
+    department: hr
+    doc_type: policy
+    owner: aisha.nkemelu@northwind.example
+    classification: internal
+    access_groups: [all-employees]
+    effective_date: 2026-01-01
+    source_updated_at: 2026-02-02T15:30:00Z
+    metadata:
+      tags: [benefits, 401k, stipends, insurance]
+
+  - path: hr/remote-work-policy.md
+    title: Remote and Hybrid Work Policy
+    source_type: markdown
+    department: hr
+    doc_type: policy
+    owner: marcus.webb@northwind.example
+    classification: internal
+    access_groups: [all-employees]
+    effective_date: 2025-08-04
+    source_updated_at: 2026-04-15T10:25:00Z
+    metadata:
+      tags: [remote, hybrid, equipment]
+
+  # =========================================================================
+  # FINANCE - two restricted, three company-wide
+  # =========================================================================
+  - path: finance/procurement-thresholds.md
+    title: Procurement and Purchase Approval
+    source_type: markdown
+    department: finance
+    doc_type: policy
+    owner: dana.okafor@northwind.example
+    classification: confidential
+    access_groups: [finance]
+    effective_date: 2025-10-01
+    source_updated_at: 2026-04-02T11:10:00Z
+    metadata:
+      tags: [procurement, approvals, purchase-orders]
+
+  - path: finance/revenue-recognition.md
+    title: Revenue Recognition Policy
+    source_type: markdown
+    department: finance
+    doc_type: policy
+    owner: dana.okafor@northwind.example
+    classification: confidential
+    access_groups: [finance]
+    effective_date: 2025-04-01
+    source_updated_at: 2026-01-30T09:45:00Z
+    metadata:
+      tags: [asc606, deferred-revenue, close]
+
+  - path: finance/expense-policy.md
+    title: Travel and Expense Policy
+    source_type: markdown
+    department: finance
+    doc_type: policy
+    owner: dana.okafor@northwind.example
+    classification: internal
+    access_groups: [all-employees]
+    # Superseded an earlier version whose meal cap was $75/day. The current
+    # document says so explicitly, which is what a "conflicting sources"
+    # evaluation case needs.
+    effective_date: 2026-01-01
+    source_updated_at: 2026-01-01T00:00:00Z
+    metadata:
+      tags: [travel, meals, lodging, mileage]
+      supersedes_effective_date: 2024-07-01
+
+  - path: finance/reimbursement.md
+    title: Expense Reimbursement Procedure
+    source_type: markdown
+    department: finance
+    doc_type: procedure
+    owner: dana.okafor@northwind.example
+    classification: internal
+    access_groups: [all-employees]
+    effective_date: 2025-11-18
+    source_updated_at: 2026-02-14T14:00:00Z
+    metadata:
+      tags: [expenses, approvals, payment-runs]
+
+  - path: finance/customer-refund-policy.md
+    title: Customer Refund Policy
+    source_type: markdown
+    department: finance
+    doc_type: policy
+    owner: dana.okafor@northwind.example
+    classification: internal
+    access_groups: [all-employees]
+    effective_date: 2025-12-01
+    source_updated_at: 2026-05-06T10:00:00Z
+    metadata:
+      tags: [refunds, billing, proration]
+
+  # =========================================================================
+  # LEGAL - one restricted, one cross-department, two company-wide
+  # =========================================================================
+  - path: legal/security-incident-legal-playbook.md
+    title: Security Incident Legal Playbook
+    source_type: markdown
+    department: legal
+    doc_type: playbook
+    owner: tom.lindqvist@northwind.example
+    classification: restricted
+    access_groups: [legal]
+    effective_date: 2025-09-15
+    source_updated_at: 2026-03-02T16:20:00Z
+    metadata:
+      tags: [breach, notification, privilege, regulators]
+
+  - path: legal/vendor-policy.md
+    title: Third-Party Vendor Management Policy
+    source_type: markdown
+    department: legal
+    doc_type: policy
+    owner: tom.lindqvist@northwind.example
+    # Two groups: Legal owns it, Finance needs it during procurement.
+    classification: confidential
+    access_groups: [legal, finance]
+    effective_date: 2025-07-01
+    source_updated_at: 2026-04-22T09:15:00Z
+    metadata:
+      tags: [vendors, dpa, soc2, subprocessors]
+
+  - path: legal/data-retention.md
+    title: Data Retention and Deletion Policy
+    source_type: markdown
+    department: legal
+    doc_type: policy
+    owner: rina.malhotra@northwind.example
+    classification: internal
+    access_groups: [all-employees]
+    effective_date: 2025-06-30
+    source_updated_at: 2026-05-11T13:50:00Z
+    metadata:
+      tags: [retention, pii, legal-hold, residency]
+
+  - path: legal/nda-guidelines.md
+    title: NDA and Confidentiality Guidelines
+    source_type: markdown
+    department: legal
+    doc_type: guideline
+    owner: tom.lindqvist@northwind.example
+    classification: internal
+    access_groups: [all-employees]
+    effective_date: 2025-05-20
+    source_updated_at: 2026-02-26T11:35:00Z
+    metadata:
+      tags: [nda, confidentiality, classification]

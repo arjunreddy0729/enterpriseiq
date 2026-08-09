@@ -1,0 +1,100 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "enterpriseiq"
+version = "0.1.0"
+description = "EnterpriseIQ - a permission-aware enterprise RAG platform"
+# No `readme` key on purpose: the README lives at the repo root, outside the
+# Docker build context (which is ./backend), so pointing at "../README.md"
+# builds fine on a laptop and fails inside the image.
+requires-python = ">=3.12"
+license = { text = "MIT" }
+
+# Core runtime dependencies. Deliberately small: no LangChain, no LlamaIndex.
+# See README.md ("Why no framework?") for the reasoning.
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic[email]>=2.9.0",
+    "pydantic-settings>=2.6.0",
+    "sqlalchemy>=2.0.36",
+    "alembic>=1.14.0",
+    "psycopg[binary]>=3.2.3",
+    "pgvector>=0.3.6",
+    "structlog>=24.4.0",
+    "pyyaml>=6.0.2",
+    "python-multipart>=0.0.12",
+    "anthropic>=0.40.0",
+]
+
+[project.optional-dependencies]
+# Local embedding + reranking models. NOT installed in the Step 1 image -
+# torch is ~800MB and we do not need it until Saturday's ingestion work.
+# To enable: change the Dockerfile install line to ".[ml,dev]" and rebuild.
+ml = [
+    "sentence-transformers>=3.3.0",
+    "torch>=2.5.0",
+    "transformers>=4.46.0",
+]
+# Document parsers (Saturday morning).
+parsers = [
+    "pymupdf>=1.24.0",
+    "python-docx>=1.1.2",
+    "markdown-it-py>=3.0.0",
+]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-cov>=6.0.0",
+    "httpx>=0.27.0",
+    "ruff>=0.7.0",
+    "mypy>=1.13.0",
+    "types-pyyaml>=6.0.12",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+# --------------------------------------------------------------------------
+# pytest
+# --------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q --strict-markers"
+markers = [
+    "integration: requires a live PostgreSQL database (deselect with '-m \"not integration\"')",
+]
+
+# --------------------------------------------------------------------------
+# ruff
+# --------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4", "RUF"]
+ignore = [
+    "B008", # FastAPI's Depends() in defaults is the documented idiom
+    "E501", # line length is handled by the formatter
+]
+
+[tool.ruff.lint.per-file-ignores]
+"alembic/versions/*" = ["E402"]
+
+# --------------------------------------------------------------------------
+# mypy
+# --------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+warn_unused_ignores = true
+warn_redundant_casts = true
+disallow_untyped_defs = true
+exclude = ["alembic/versions/"]
+
+[[tool.mypy.overrides]]
+module = ["pgvector.*", "sentence_transformers.*"]
+ignore_missing_imports = true

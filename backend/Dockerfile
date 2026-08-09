@@ -1,0 +1,53 @@
+# EnterpriseIQ API image.
+#
+# Step 1 deliberately installs ONLY the core + dev dependencies. The ML extras
+# (torch, sentence-transformers) add ~1GB and are not needed until Saturday's
+# ingestion work; to enable them, change the pip install line below to
+# ".[ml,parsers,dev]" and rebuild.
+
+# Pinned to 3.13 to match the local development venv exactly. Dev/prod Python
+# drift is cheap to prevent and expensive to debug once benchmark numbers are
+# involved: embeddings and reranker scores are what the evaluation harness
+# measures, and "it scored differently on my laptop" is not an answer.
+FROM python:3.13-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    # Model weights live on a named volume so rebuilds do not re-download them.
+    HF_HOME=/opt/hf-cache
+
+WORKDIR /app
+
+# curl is used by the compose healthcheck. psycopg[binary] ships wheels, so we
+# need no compiler and no libpq-dev.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Non-root runtime user.
+RUN useradd --create-home --uid 1000 appuser \
+    && mkdir -p /opt/hf-cache \
+    && chown -R appuser:appuser /opt/hf-cache
+
+# --- Dependency layer ------------------------------------------------------
+# Copy only the manifest, create a stub package so the editable install
+# succeeds, then install. This layer is cached and only re-runs when
+# pyproject.toml changes - not on every source edit.
+COPY pyproject.toml ./
+RUN mkdir -p app && touch app/__init__.py \
+    && pip install --no-cache-dir -e ".[dev]"
+
+# --- Source layer ----------------------------------------------------------
+COPY . .
+
+RUN chmod +x scripts/entrypoint.sh && chown -R appuser:appuser /app
+
+USER appuser
+
+EXPOSE 8000
+
+# The entrypoint waits for Postgres, runs migrations, seeds identities, then
+# starts uvicorn. See scripts/entrypoint.sh.
+CMD ["./scripts/entrypoint.sh"]

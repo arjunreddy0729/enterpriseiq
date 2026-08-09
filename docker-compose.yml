@@ -1,0 +1,82 @@
+# EnterpriseIQ - local development stack.
+#
+#   docker compose up --build
+#
+# Everything here runs locally and costs nothing. The only paid component in
+# the whole project is the Anthropic API call in the generation layer, which
+# is not exercised by this milestone.
+
+name: enterpriseiq
+
+services:
+  db:
+    # Official pgvector image: PostgreSQL 16 with the `vector` extension
+    # already compiled in. We still CREATE EXTENSION explicitly in migration
+    # 0001 so the schema is self-describing.
+    image: pgvector/pgvector:pg16
+    container_name: enterpriseiq-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-enterpriseiq}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-enterpriseiq}
+      POSTGRES_DB: ${POSTGRES_DB:-enterpriseiq}
+      # Slightly larger work_mem helps HNSW index builds and GIN scans.
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    ports:
+      # Host port 5433 by default so this never collides with a Postgres you
+      # already run locally on 5432. Inside the compose network the API still
+      # talks to db:5432.
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-enterpriseiq} -d ${POSTGRES_DB:-enterpriseiq}",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: enterpriseiq-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # These override whatever .env says, because inside the compose network
+      # the database is reachable at db:5432 regardless of the host settings
+      # you use when running the API outside Docker.
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      CORPUS_DIR: /corpus
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${API_HOST_PORT:-8000}:8000"
+    volumes:
+      # Source is bind-mounted so uvicorn --reload picks up your edits without
+      # a rebuild. The package was installed with `pip install -e .`, so the
+      # import path still resolves to /app.
+      - ./backend:/app
+      # The corpus is read-only to the API: ingestion reads it, nothing writes it.
+      - ./corpus:/corpus:ro
+      # Persist downloaded model weights across container rebuilds (used from
+      # Saturday onward; harmless now).
+      - hfcache:/opt/hf-cache
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  pgdata:
+  hfcache:

@@ -1,0 +1,173 @@
+NORTHWIND SYSTEMS - ON-CALL ROTATION HANDBOOK
+Maintained by: Sofia Reyes, Engineering Manager, Infrastructure
+Contact: sofia.reyes@northwind.example
+
+This handbook covers the mechanics of being on call: who is on, when they hand
+off, what wakes them up, and how to swap out. What happens once something is
+broken is a different document - see incident-response.md for severities, roles,
+and the postmortem process. This file assumes you already know that a SEV1 has a
+15-minute ack target and a SEV2 has 30 minutes.
+
+ROTATION SHAPE
+
+    Rotations are WEEKLY. Each participating team runs its own, with exactly
+    two people on at a time:
+
+        PRIMARY     - receives all pages first. Owns the response.
+        SECONDARY   - backstop. Paged if the primary has not acknowledged
+                      within the ack target for that severity. Also the first
+                      person the primary pulls in for a second pair of hands.
+
+    The secondary is not decoration. On a SEV1 the primary will be busy being
+    Incident Commander or debugging, and the secondary is who actually gets
+    things done. Treat a week as secondary as a real on-call week. A person is
+    never primary and secondary in the same week, and never primary on two
+    teams in the same week.
+
+    Teams currently running a rotation:
+
+        Platform            (api-gateway, identity-service)
+        Payments            (payments-service, ledger-service)
+        Shipments           (shipment-service)
+        Infrastructure      (cluster, databases, CI/CD, and SEV1 backstop)
+
+    Infrastructure is paged in parallel on any SEV1, not sequentially.
+
+HANDOFF
+
+    Handoff is MONDAY AT 10:00 AMERICA/CHICAGO. That time is deliberate:
+    inside business hours for Austin and Denver, late afternoon in Dublin, so
+    both engineers overlap live regardless of office. Do not move it to Friday
+    afternoon - handing an unstable system to someone at the start of a weekend
+    is how a SEV3 becomes a SEV1.
+
+    Handoff is a real conversation, not a calendar event that passes silently.
+    Fifteen minutes, both people present, outgoing primary drives.
+
+    HANDOFF CHECKLIST - outgoing primary walks through each item:
+
+        [ ] Open incidents. Anything still running, and who is IC.
+        [ ] Incidents closed this week that are not fully resolved underneath.
+            "It stopped happening" is not "we fixed it."
+        [ ] Temporary mitigations still in place - a lowered rate limit, a
+            disabled job, a feature turned off, a pinned image. Each gets an
+            owner and a removal date. This is the item people forget, and the
+            item that causes the most trouble.
+        [ ] Alerts that fired: which were real, which were noise, which are
+            still firing. Noisy alerts go to the weekly operations meeting;
+            see observability-standards.md.
+        [ ] Deploys that landed, and anything scheduled for the coming week.
+            Check the incoming week for a deploy freeze: nothing goes to
+            production after 16:00 Friday, and nothing December 20 through 31.
+        [ ] Anything running long - a backfill, a migration soak, a
+            reconciliation catching up. Plus known-flaky things and open
+            postmortem action items touching this service.
+        [ ] Confirm the incoming primary and secondary are reachable. Send a
+            real test page, every rotation. A paging setup that silently broke
+            three weeks ago is only ever discovered at 02:00.
+
+PAGE OR TICKET
+
+    Getting this line right is the single biggest factor in whether on-call at
+    Northwind is sustainable. The rule:
+
+        A PAGE means a human must act NOW, at any hour.
+        A TICKET means a human must act during business hours.
+
+    PAGE if:
+        - Customers cannot complete a core flow: authenticating, creating a
+          payment, creating a shipment.
+        - Money is at risk. Payment loss is a SEV1 by definition.
+        - A service is down or failing health checks in production.
+        - Error rate or latency has breached the service objective, sustained.
+        - Webhook signature verification is failing. A nonzero rate means a
+          wrong secret or a forgery attempt, and both are urgent.
+        - Anything that would be a SEV1 or SEV2.
+
+    TICKET if:
+        - A single tenant is affected by a bounded, non-money bug.
+        - A background job is behind but catching up.
+        - Saturation is elevated but not yet a problem.
+        - A certificate expires in three weeks, or a dashboard is wrong.
+        - Anything that would be a SEV3 or SEV4.
+
+    NEITHER - fix the alert - if there was never going to be anything to do, or
+    if it fires on a cause rather than a symptom. Nobody experiences a pod
+    restart; users experience failed checkouts. If you are paged for something
+    that should have been a ticket, reclassify it that week. See
+    observability-standards.md.
+
+ESCALATION LADDER
+
+    Rung 1   PRIMARY on-call for the owning team. Paged immediately.
+    Rung 2   SECONDARY on-call, same team. Paged automatically if the primary
+             has not acknowledged within the ack target for that severity:
+             15 minutes for a SEV1, 30 minutes for a SEV2.
+    Rung 3   TEAM MANAGER. Paged if the secondary has also not acknowledged.
+    Rung 4   ENGINEERING LEADERSHIP. Notified by the Incident Commander on any
+             SEV1 at declaration, and on any SEV2 running past 60 minutes
+             without a clear mitigation path.
+
+    Sideways at any point:
+        - Infrastructure on-call, for anything cluster, database, or deploy
+          related. Paged in parallel on every SEV1 regardless.
+        - Legal, if there is any possibility personal data is involved. Tom
+          Lindqvist, General Counsel, and Rina Malhotra, Privacy Counsel. A
+          72-hour customer notification obligation attaches to confirmed
+          security incidents involving personal data, and that clock is not
+          something to reason about alone at 02:00.
+
+    Escalating early is correct behavior. Stuck for fifteen minutes on a SEV1
+    is a reason to add people, not to try harder alone.
+
+COMPENSATION AND TIME BACK
+
+    On-call is compensated. The specifics - eligibility, the rate, and how it
+    is paid out - are set by People Operations and documented in the HR
+    compensation policy, owned by Marcus Webb, Director of People Operations.
+    Deliberately no figures here: this file would go stale, and the HR policy
+    is the source of truth.
+
+    What this handbook does commit to:
+        - If you were paged outside working hours and it materially cost you
+          sleep, take the time back. Tell your manager, do not ask permission.
+        - An engineer running on four hours of sleep making changes to the
+          money path is a risk to the platform, not a hero.
+        - Repeated bad weeks on one rotation are a systems problem and get
+          fixed as one, with engineering time allocated at the weekly
+          operations meeting. Not by rotating the suffering.
+
+SWAPPING SHIFTS
+
+    Swapping is normal and easy. The rules exist only to keep the schedule
+    matching reality.
+
+        1. Find your own cover. Ask the team channel; do not ask your manager
+           to find someone for you.
+        2. Both people update the on-call schedule directly. The schedule is
+           the source of truth for who gets paged.
+        3. Post the swap in the team channel, and notify your manager if it
+           crosses a handoff boundary or covers a weekend.
+        4. Record swaps before they take effect. One arranged verbally on
+           Friday and never entered will page the wrong person on Saturday.
+
+    Partial swaps - a single night, a single day - are fine on the same rules.
+
+    PLANNED TIME OFF goes in as far ahead as you can so the rotation is built
+    around it. You should not be on call while on PTO. If you cannot find
+    cover, escalate to your manager; being nominally on call while unreachable
+    is much worse than saying so in advance.
+
+    NEW JOINERS shadow one full rotation as a third, non-paged participant
+    before taking a primary week.
+
+CHANGE LOG
+
+    2025-03-24  Sofia Reyes    First version of the on-call handbook.
+    2025-08-11  Sofia Reyes    Moved handoff from Friday 16:00 to Monday 10:00
+                               America/Chicago after repeated weekend handoffs
+                               of unstable systems.
+    2026-01-19  Sofia Reyes    Added page-or-ticket and the requirement to send
+                               a real test page at every handoff.
+    2026-05-05  Sofia Reyes    Added shadow rotation for new joiners; clarified
+                               that compensation figures live in the HR policy.
