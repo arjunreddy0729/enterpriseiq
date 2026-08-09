@@ -30,7 +30,6 @@ from typing import Any
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
-    ARRAY,
     CheckConstraint,
     Computed,
     Date,
@@ -45,7 +44,11 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR, UUID
+# The PostgreSQL ARRAY, not sqlalchemy.ARRAY. Only the dialect-specific type
+# exposes the containment comparators, and `.overlap()` renders the `&&`
+# operator that the entire access-control predicate is built on. With the
+# generic type the ACL check raises AttributeError on the first search.
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, TSVECTOR, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.config import get_settings

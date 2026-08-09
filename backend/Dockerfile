@@ -1,9 +1,9 @@
 # EnterpriseIQ API image.
 #
-# Step 1 deliberately installs ONLY the core + dev dependencies. The ML extras
-# (torch, sentence-transformers) add ~1GB and are not needed until Saturday's
-# ingestion work; to enable them, change the pip install line below to
-# ".[ml,parsers,dev]" and rebuild.
+# The ML extras (torch, sentence-transformers) take the image from ~540MB to
+# ~2.5GB. That is the price of local embeddings, and it buys the ability to
+# re-embed the corpus as many times as tuning requires at zero marginal cost.
+# Model weights themselves live on the hfcache volume, not in the image.
 
 # Pinned to 3.13 to match the local development venv exactly. Dev/prod Python
 # drift is cheap to prevent and expensive to debug once benchmark numbers are
@@ -37,7 +37,7 @@ RUN useradd --create-home --uid 1000 appuser \
 # pyproject.toml changes - not on every source edit.
 COPY pyproject.toml ./
 RUN mkdir -p app && touch app/__init__.py \
-    && pip install --no-cache-dir -e ".[dev]"
+    && pip install --no-cache-dir -e ".[ml,parsers,dev]"
 
 # --- Source layer ----------------------------------------------------------
 COPY . .

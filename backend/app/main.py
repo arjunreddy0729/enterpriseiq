@@ -15,7 +15,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.errors import register_exception_handlers
-from app.api.routes import health
+from app.api.routes import health, search
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging, get_logger, request_id_var
 
@@ -112,8 +112,8 @@ def create_app() -> FastAPI:
     register_exception_handlers(app)
 
     app.include_router(health.router)
-    # Ingestion, search, and query routers land Saturday and Sunday under
-    # settings.api_v1_prefix.
+    app.include_router(search.router, prefix=settings.api_v1_prefix)
+    # The generation router (/query) lands Sunday under the same prefix.
 
     return app
 
