@@ -170,3 +170,26 @@ def test_classification_filter(client: TestClient) -> None:
         top_k=5,
     )
     assert all(r["classification"] == "restricted" for r in body["results"])
+
+
+def test_request_id_is_always_populated(client: TestClient) -> None:
+    """Regression: the route read the inbound request header, so a client that
+    did not send one got "" in the body and "unknown" in query_logs - nothing
+    to correlate a bad answer against."""
+    response = client.post(
+        "/api/v1/search",
+        json={"query": "authentication"},
+        headers=ENGINEER,
+    )
+    body = response.json()
+    assert body["request_id"], "response body must carry a request id"
+    assert body["request_id"] == response.headers["X-Request-ID"]
+
+
+def test_supplied_request_id_is_honoured(client: TestClient) -> None:
+    response = client.post(
+        "/api/v1/search",
+        json={"query": "authentication"},
+        headers={**ENGINEER, "X-Request-ID": "caller-supplied-123"},
+    )
+    assert response.json()["request_id"] == "caller-supplied-123"

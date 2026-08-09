@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 
 from app.api.dependencies import EmbedderDep, IdentityDep, SessionDep
 from app.core.identity import Identity
-from app.core.logging import get_logger
+from app.core.logging import get_logger, request_id_var
 from app.db.models import QueryLog
 from app.retrieval.filters import describe
 from app.retrieval.keyword import KeywordRetriever
@@ -54,7 +54,13 @@ def search(
     embedder: EmbedderDep,
 ) -> SearchResponse:
     started = time.perf_counter()
-    request_id = request.headers.get("X-Request-ID", "")
+    # From the contextvar the middleware set, NOT from the inbound header.
+    # Reading the request header only works when the *client* supplied an id;
+    # for everyone else it returned "" and the response - and the query_logs
+    # row, and the log lines - had nothing to correlate on. The request id is
+    # the thread that ties a bad answer back to the evidence that produced it,
+    # so it must always be present.
+    request_id = request_id_var.get() or request.headers.get("X-Request-ID", "")
 
     filters: Filters = (
         payload.filters.to_domain() if payload.filters is not None else Filters()
