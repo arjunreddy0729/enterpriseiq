@@ -93,7 +93,27 @@ class Settings(BaseSettings):
     # --- Anthropic ---------------------------------------------------------
     anthropic_api_key: SecretStr | None = None
     anthropic_model: str = "claude-opus-5"
+    #: Caps thinking AND answer text together on Claude 4.6+ models, so this
+    #: needs headroom above the length of the answer we actually want.
     anthropic_max_tokens: int = 2048
+    #: low is right for grounded extraction: the reasoning is "read these
+    #: passages and report what they say", not open-ended problem solving.
+    anthropic_effort: Literal["low", "medium", "high"] = "low"
+    anthropic_timeout_seconds: float = 60.0
+    anthropic_max_retries: int = 2
+
+    # --- Generation --------------------------------------------------------
+    #: Below this fused score, the best candidate is treated as unrelated to
+    #: the question and we abstain WITHOUT calling the model. Retrieval
+    #: returning nothing relevant is the most common cause of a hallucinated
+    #: answer, and it is also the cheapest one to catch.
+    generation_min_candidate_score: float = 0.02
+    #: A sentence must reach this support score against its cited chunks to
+    #: count as grounded.
+    grounding_support_threshold: float = 0.45
+    #: Fraction of claim sentences that must be supported for the answer to be
+    #: considered grounded overall.
+    grounding_pass_threshold: float = 0.7
 
     # --- Retrieval ---------------------------------------------------------
     # Cheap retrievers cast a wide net (recall); the expensive cross-encoder
