@@ -1,299 +1,413 @@
 # EnterpriseIQ
 
-A permission-aware enterprise RAG platform. Employees ask questions in natural
-language; the system retrieves evidence from company documents **that the
-asking user is actually allowed to read**, and answers with citations pointing
-at the exact supporting text — or says it cannot answer.
+A permission-aware enterprise RAG platform. Employees ask questions in plain
+English; the system answers from company documents, cites exactly which passage
+each claim came from, declines when the evidence isn't there, and never lets a
+user retrieve a document they aren't allowed to read.
 
-> **Status: Step 1 of the build — foundation.**
-> Schema, configuration, health probes, identity seeding and the synthetic
-> corpus are in place. Ingestion, retrieval and generation land next.
-> Nothing in this README claims a benchmark number that has not been measured.
+Everything runs locally except the answer-generation call to Claude.
+
+```bash
+cp .env.example .env          # add your ANTHROPIC_API_KEY
+docker compose up --build
+```
 
 ---
 
 ## The problem
 
-Company knowledge is scattered across wikis, repos, PDFs and policy documents.
-Two things go wrong when you point a naive RAG pipeline at it:
+Company knowledge is scattered across engineering docs, HR policies, finance
+procedures and legal playbooks. Employees waste time searching it, and when
+they do find something it's often outdated or wrong.
 
-1. **Semantic search alone misses exact matches.** Ask for the OAuth
-   configuration of a specific service and an embedding model will happily
-   return five documents about authentication in general and miss the one
-   containing `client_id`.
-2. **Retrieval ignores who is asking.** An engineer asking "what is our
-   compensation policy?" should not have the restricted HR document pulled
-   into the model's context — and once it is in context, it has already
-   leaked, because the model will paraphrase it.
+A naive "chat with your documents" system solves the search problem and creates
+two worse ones:
 
-EnterpriseIQ addresses both directly: hybrid retrieval for (1), and an ACL
-predicate inside the retrieval query for (2).
+1. **It leaks.** Ask "what are the salary bands?" and a vector search happily
+   returns the restricted HR compensation policy, which then goes into the
+   model's context and gets paraphrased back to whoever asked.
+2. **It invents.** When retrieval finds nothing relevant, a language model will
+   still produce a fluent, confident, wrong answer.
+
+EnterpriseIQ is built around those two failures rather than around the happy
+path.
 
 ---
 
 ## Architecture
 
 ```
-                       ┌──────────────────────────┐
-                       │  Demo UI (static HTML)   │
-                       └────────────┬─────────────┘
-                                    │ HTTP + X-Dev-User
-                       ┌────────────▼─────────────┐
-                       │   FastAPI (api/routes)   │  thin: validate, delegate
-                       └────────────┬─────────────┘
-                                    │
-                       ┌────────────▼─────────────┐
-                       │        services/         │  orchestration + timing
-                       └──┬────────────────────┬──┘
-                          │                    │
-          ┌───────────────▼──────┐   ┌─────────▼──────────────────────────┐
-          │  INGESTION PIPELINE  │   │        QUERY PIPELINE              │
-          │                      │   │  1. normalise query                │
-          │  parsers/ ─► Block[] │   │  2. resolve identity → group ids   │
-          │       │              │   │  3. build the ACL predicate        │
-          │  chunking.py         │   │  4. ┌─ vector search   (top 50) ─┐ │
-          │       │              │   │     └─ keyword search   (top 50)─┘ │
-          │  metadata.py         │   │        both filter in SQL ▲        │
-          │       │              │   │  5. RRF fuse           → top 30    │
-          │  embedder            │   │  6. rerank (V2)        → top 6     │
-          └───────┼──────────────┘   │  7. context builder (budget+dedup) │
-                  │                  │  8. grounded generation            │
-                  ▼                  │  9. citation resolution + validate │
-       ┌──────────────────────┐      │ 10. grounding check → confidence   │
-       │ PostgreSQL 16        │◄─────┤ 11. query_logs write               │
-       │  + pgvector (HNSW)   │      └────────────────────────────────────┘
-       │  + tsvector (GIN)    │
-       │  + int[] ACL (GIN)   │      ┌────────────────────────────────────┐
-       └──────────────────────┘      │ evaluation/ (offline CLI)          │
-                                     │  dataset.json → runner → metrics   │
-                                     └────────────────────────────────────┘
+                        ┌──────────────────────┐
+                        │   FastAPI (routes)   │  thin: validate, authn, delegate
+                        └──────────┬───────────┘
+                                   │
+              ┌────────────────────┴────────────────────┐
+              │                                          │
+     INGESTION PIPELINE                          QUERY PIPELINE
+              │                                          │
+   parse → blocks → chunk                 1. resolve identity → group ids
+              │                           2. build access predicate
+        embed (BGE, local)                3. ┌ keyword search (top 50) ┐
+              │                              └ vector search  (top 50) ┘
+              ▼                                 both filter in SQL ▲
+   ┌─────────────────────────┐              4. RRF fusion → top 30
+   │  PostgreSQL 16          │◄─────────────5. [reranker → top 6]  (off; measured)
+   │   + pgvector  (HNSW)    │              6. context assembly + citation numbering
+   │   + tsvector  (GIN)     │              7. Claude generates, or abstains
+   │   + int[] ACL (GIN)     │              8. citation validation
+   └─────────────────────────┘              9. grounding verification
+                                           10. confidence banding
+                                           11. query_logs
 ```
 
-Four interfaces are the seams that let this grow without a rewrite:
-`Retriever`, `Embedder`, `Reranker`, `LLMClient`. Moving to OpenSearch means
-writing one new `Retriever`; nothing above the interface knows what is behind
-it.
+**Ports and adapters at four seams** — `Embedder`, `Retriever`, `Reranker`,
+`LLMClient`. Moving to OpenSearch means writing one new `Retriever`; nothing
+above the interface changes.
 
 ---
 
-## Quick start
+## The design decisions worth defending
 
-**Prerequisites:** Docker Desktop. Nothing else — no Python install, no
-Postgres, no model downloads for this step.
+### Permission filtering happens *inside* the retrieval query
 
-```bash
-git clone <your-fork> enterpriseiq && cd enterpriseiq
-cp .env.example .env
-docker compose up --build
-```
-
-That will:
-
-1. start PostgreSQL 16 with `pgvector`,
-2. wait for it to accept connections,
-3. apply migration `0001` (schema, extensions, HNSW + GIN indexes),
-4. seed the five access groups and seven demo users,
-5. start the API on <http://localhost:8000>.
-
-Verify:
-
-```bash
-curl -s localhost:8000/healthz | jq
-curl -s localhost:8000/readyz | jq
-```
-
-`/readyz` should report `"status": "ready"` with `database`, `pgvector`,
-`migrations`, `embedding_dim` and `seed` all `ok`. The `llm` check will read
-`degraded` until you put a real key in `.env` — that is expected and does not
-block retrieval work.
-
-Interactive API docs: <http://localhost:8000/docs>
-
-### If a port is already taken
-
-`docker compose up` fails with `Bind for 0.0.0.0:8000 failed: port is already
-allocated` rather than picking a free port. Set the host-side mapping in
-`.env` — the container-side ports never change:
-
-```bash
-API_HOST_PORT=8001
-POSTGRES_HOST_PORT=5433
-```
-
-Postgres already defaults to host port **5433** so it never collides with a
-local Postgres on 5432.
-
----
-
-## Configuration
-
-Everything is environment-driven; see [`.env.example`](.env.example) for the
-full annotated list. Nothing is hardcoded and `.env` is gitignored.
-
-| What | Where it runs | Cost |
-|---|---|---|
-| PostgreSQL + pgvector | local Docker | free |
-| Keyword search (Postgres FTS + BM25 rescoring) | local | free |
-| Embeddings (`BAAI/bge-base-en-v1.5`) | local CPU | free |
-| Reranking (`BAAI/bge-reranker-base`) | local CPU | free |
-| **Answer generation (Anthropic)** | **API** | **the only paid component** |
-
-`ANTHROPIC_API_KEY` is read server-side only. It is never sent to the
-frontend, never returned in a response, and never written to a log.
-
-### LLM cost
-
-`ANTHROPIC_MODEL` defaults to `claude-opus-5`. Every request's token usage and
-estimated cost is recorded in `query_logs`, using this table
-(`app/core/config.py`, USD per million tokens):
-
-| Model | Input | Output |
-|---|---:|---:|
-| `claude-opus-5` | $5.00 | $25.00 |
-| `claude-sonnet-5` | $3.00 | $15.00 |
-| `claude-haiku-4-5` | $1.00 | $5.00 |
-
-A typical grounded answer sends ~4k tokens of context and returns ~300 tokens,
-so roughly **$0.03 per question** on `claude-opus-5`. A 30-question evaluation
-run is well under a dollar. If you want to spend less while iterating, change
-one line in `.env`:
-
-```bash
-ANTHROPIC_MODEL=claude-haiku-4-5
-```
-
-Retrieval quality is unaffected by that choice — only generation is — so the
-retrieval metrics stay comparable across models.
-
----
-
-## Design decisions worth defending
-
-**Denormalised ACLs on `chunks`.** `document_permissions` is the source of
-truth, but `chunks.access_group_ids` carries a denormalised `int[]` with a GIN
-index so the permission check collapses to one indexable predicate:
+Every retriever builds its `WHERE` clause in one place
+([`app/retrieval/filters.py`](backend/app/retrieval/filters.py)) and the access
+check is a single indexed predicate:
 
 ```sql
-WHERE c.access_group_ids && :user_group_ids
+WHERE chunks.access_group_ids && :allowed_group_ids   -- GIN-indexed array overlap
 ```
 
-The normalised alternative joins `chunks → documents → document_permissions →
-user_groups` *after* the HNSW scan, which is exactly when you cannot afford it.
-The cost is an eventual-consistency window on ACL changes, closed by a
-propagation job — with revocations propagated synchronously, because a
-revocation lag is a security issue in a way a grant lag is not.
+The obvious alternative — fetch the top 20, then drop the ones the user can't
+see — fails twice. Restricted text has already left the database and passed
+through application memory and logs. And you asked for 20 candidates and kept
+3: recall silently collapsed with no error, degrading worst for the users whose
+access is most restricted.
 
-**Filtering, not post-filtering.** Both retrievers apply the ACL predicate
-inside their SQL. Post-filtering would be wrong twice over: anything that
-reaches the context window has already leaked, and discarding 17 of 20
-retrieved rows silently leaves you generating from 3 chunks while believing
-you had 20.
+`RetrievalQuery` has no default for `allowed_group_ids`, so forgetting it is a
+`TypeError` at the call site rather than an unfiltered search at runtime.
 
-**Postgres FTS for candidates, real BM25 for scoring.** `ts_rank_cd` is not
-BM25 — no term-frequency saturation, different length normalisation. Postgres
-gives us fast, ACL-filterable candidate generation; a rescoring pass computes
-genuine BM25 over those candidates using the statistics in `term_stats` and
-`corpus_stats`.
+Group ids are **denormalised onto every chunk row** so the check is one
+indexable predicate instead of a three-table join executed after the vector
+scan. `document_permissions` remains the source of truth; the ingestion
+pipeline keeps the copy in step.
 
-**HNSW over IVFFlat.** No training step, so it works from an empty table, and
-better recall at the same latency. With a selective ACL filter, pgvector's
-iterative index scans matter — a filtered HNSW search can otherwise return
-fewer than `k` rows.
+### Hybrid search, because embeddings lose exact tokens
 
-**Synchronous SQLAlchemy.** The expensive work — embedding a query, scoring 30
-pairs with a cross-encoder — is blocking CPU work in C extensions. Async would
-buy false concurrency and force `run_in_executor` plumbing through every
-layer. FastAPI runs plain `def` handlers in a threadpool, which gives real
-parallelism for the same code.
+An embedding compresses meaning into 768 floats, and that compression discards
+rare, exact tokens — `X-Cardinal-Signature`, `client_id`, `payments:refund`,
+`429`. Semantically an identifier is nearly content-free, so the vector barely
+encodes it. Keyword search is the mirror image: IDF weights rare terms *most*.
 
-**No LangChain or LlamaIndex.** Not dogma — the entire value of this project is
-that the hybrid retrieval, fusion, ACL enforcement, citation resolution and
-grounding are implemented and understood rather than imported. Small focused
-libraries are fine; the retrieval pipeline is not.
+The two fail on disjoint query sets, which is what makes fusing them worth more
+than tuning either. Measured on this corpus: searching `X-Cardinal-Signature`
+returns exactly one keyword hit — the right one — while the paraphrase *"how do
+our services prove who they are to each other?"* is carried by the vector side.
+
+**One bug worth knowing about**: `websearch_to_tsquery` ANDs every term, so a
+five-word question needed all five words in one chunk and matched *nothing* —
+the keyword half was silently contributing zero. The parser is kept for its
+quoting and negation handling, but the operator is swapped to OR; ranking sorts
+out which matches more, and rarer, terms.
+
+### RRF fuses on rank, not score
+
+```
+RRF(d) = Σ  1 / (k + rank_r(d))      k = 60
+```
+
+Cosine similarity lives in [-1, 1] and clusters around 0.55–0.90; `ts_rank_cd`
+is unbounded and corpus-dependent. Any weighted sum of the two needs
+normalisation, and every normalisation scheme breaks exactly when one retriever
+returns garbage — its scores get stretched to fill the range and noise gets
+promoted. Ranks are comparable by construction.
+
+`k = 60` damps the head, so a document ranked 3rd by *both* retrievers beats one
+ranked 1st by one and 200th by the other.
+
+### Structure-aware chunking
+
+Fixed-size splitting severs sentences, orphans code from its explanation, and
+strips headings. A chunk reading *"It uses OAuth 2.0 with a 3600s TTL"* has lost
+the word "payment" and is unretrievable for the query that needs it.
+
+So: pack whole blocks to a token target, break at section boundaries, never
+split a code fence or table, and **prefix every chunk with its heading path**
+so it becomes *"Payments Service > Authentication\n\nIt uses OAuth 2.0…"*. That
+prefix is embedded *and* indexed in the weight-`A` tsvector position, so it
+helps both retrievers at once.
+
+22 documents → **264 chunks**, median 252 tokens, none over the ceiling.
+
+### Citations the model cannot fabricate
+
+The model never names a document. Context passages are numbered server-side,
+the number→chunk mapping is held in memory, and the model is asked only to
+write `[1]`. Afterwards every marker is validated against that mapping:
+unknown numbers are **stripped from the text**, surviving citations are
+renumbered contiguously, and only cited passages are returned as sources.
+
+Asking a model to write "according to compensation-policy.md" is asking it to
+generate a fact. A number looked up in a server-side table cannot be invented.
+
+### Grounding verification
+
+Citation validation proves a citation points at a real passage. It does not
+prove the passage *says* what the sentence claims. Each claim sentence is
+scored against the passages it cites, blending lexical overlap with embedding
+similarity — **weighted, not `max()`**.
+
+That detail matters and a test caught it: taking the max let semantic
+similarity alone carry a sentence, and semantic similarity cannot distinguish a
+faithful paraphrase from a plausible invention on the same topic. *"Northwind
+authenticates using biometric retina scanning"* sits close to a real passage
+about authentication. Lexical overlap is what catches a changed number — `$85`
+and `$75` are near-identical to an embedding and completely different as facts.
+
+### Confidence is a band, never a percentage
+
+`HIGH` / `MEDIUM` / `LOW`, returned alongside the signals that produced it.
+
+A percentage asserts calibration: "94% confident" claims that among answers
+scored 0.94, ~94% were correct. Demonstrating that needs labelled outcomes for
+thousands of answers. Without them a percentage is a number with a decimal
+point and no meaning — and decimal points are persuasive, which makes an
+uncalibrated one actively harmful.
+
+### Two abstention points
+
+- **Before the model runs.** If nothing retrieved clears a relevance floor, no
+  API call is made. Retrieval finding nothing relevant is the most common cause
+  of an invented answer, and the cheapest to prevent.
+- **After the model runs.** A sentinel token lets the model say the passages
+  didn't answer the question, detected deterministically rather than by
+  string-matching prose.
+
+---
+
+## Benchmark results
+
+34 questions across four categories, run against the committed corpus. Raw
+results in [`evaluation/results/`](evaluation/results/).
+
+```
+PERMISSION ENFORCEMENT                    PASS
+  6 cases asked for a document the user may not read
+  leaks: 0
+
+RETRIEVAL  (23 answerable cases)
+     k    recall   precision      nDCG
+     1     0.891       0.957     0.957
+     3     1.000       0.377     0.984
+     5     1.000       0.226     0.984
+  MRR   0.978
+
+ABSTENTION
+  accuracy            1.000
+  correctly declined  11/11
+  wrongly declined    0/23
+
+GENERATION  (23 answered)
+  fact coverage       1.000
+  citation precision  0.790
+  grounding           0.760
+```
+
+`precision@k` is divided by `k`, so with 1–2 relevant documents per question
+the ceiling at k=10 is 0.1–0.2. The number to read there is recall.
+
+### What the numbers don't say
+
+- **The benchmark is small and easy.** 22 documents, 23 answerable questions.
+  Recall@3 = 1.000 shows the pipeline works; it does not show it scales.
+- **Citation precision 0.790 is probably a labelling artifact.** All nine cases
+  that lowered it cite the right document *plus* a second one that genuinely
+  discusses the same fact, while `expected_sources` names only one. Left
+  unfixed rather than relabelled — tuning the benchmark to flatter the system
+  is how benchmarks become worthless.
+- **Grounding 0.760** is the number genuinely worth improving.
+
+### The reranker measurement
+
+`BAAI/bge-reranker-base` is implemented, benchmarked, and **left off**:
+
+|                | baseline | reranked |
+|----------------|---------:|---------:|
+| recall@1       |    0.891 |    0.891 |
+| recall@3       |    1.000 |    1.000 |
+| MRR            |    0.978 |    0.978 |
+| latency p50    |     41ms |   2238ms |
+
+Not a no-op — rerank scores are populated and document ordering changes in
+**32 of 34 cases**. It reshuffles results *below* the relevant document, which
+no metric measures, because the fused ranking already puts the right document
+first or second nearly every time. Recall@3 is already 1.000; there is no
+headroom to recover.
+
+A reranker fixes a *precision* problem. This corpus doesn't have one. Shipping
+it anyway would cost 54× latency for nothing.
+
+```bash
+python -m scripts.run_eval                        # retrieval only, free
+python -m scripts.run_eval --rerank
+python -m scripts.compare_eval before.json after.json
+```
+
+---
+
+## Tech stack
+
+| Layer | Choice | Why |
+|---|---|---|
+| API | FastAPI + Pydantic v2 | typed request/response, free OpenAPI |
+| Database | PostgreSQL 16 | documents, vectors, keyword index, ACLs and logs in one query plan |
+| Vector search | pgvector 0.8, HNSW, cosine | no training step, works from an empty table |
+| Keyword search | Postgres FTS, GIN, weighted tsvector | ACL predicate evaluated in the same plan |
+| Embeddings | `BAAI/bge-base-en-v1.5`, 768d, CPU | free re-embedding while tuning chunking |
+| Reranking | `BAAI/bge-reranker-base` | implemented, measured, disabled |
+| Generation | Claude via the Anthropic SDK | the only paid component |
+| Migrations | Alembic | |
+| Tests | pytest — **308 passing** | |
+
+**No LangChain or LlamaIndex.** Not dogma: hybrid retrieval, fusion, ACL
+enforcement, citation resolution and grounding *are* this project. Behind a
+framework, neither an interviewer nor I could tell whether I understood any of
+them.
+
+### Two details that cost real time
+
+- **`sqlalchemy.ARRAY` vs `postgresql.ARRAY`.** Only the dialect-specific type
+  exposes `.overlap()`, which renders the `&&` the entire ACL check depends on.
+  With the generic type the permission predicate raises `AttributeError` on the
+  first search.
+- **`pip install torch` pulls CUDA on Linux.** ~2.9GB of nvidia wheels plus
+  650MB of Triton, in a CPU-only image. Installing from PyTorch's cpu index
+  first took the image from **8.94GB → 2.22GB**.
+
+---
+
+## Running it
+
+```bash
+cp .env.example .env                 # add ANTHROPIC_API_KEY
+docker compose up --build            # Postgres + pgvector, migrations, seed, API
+```
+
+```bash
+docker compose exec api python -m scripts.ingest_corpus
+```
+
+Ask a question as an HR user:
+
+```bash
+curl -s -X POST localhost:8000/api/v1/query \
+  -H 'Content-Type: application/json' \
+  -H 'X-Dev-User: marcus.webb@northwind.example' \
+  -d '{"query":"What are the bonus targets by level?"}'
+```
+
+Now ask the **identical** question as an engineer and watch it decline:
+
+```bash
+curl -s -X POST localhost:8000/api/v1/query \
+  -H 'Content-Type: application/json' \
+  -H 'X-Dev-User: priya.raman@northwind.example' \
+  -d '{"query":"What are the bonus targets by level?"}'
+```
+
+Retrieval only, no model, no cost:
+
+```bash
+curl -s -X POST localhost:8000/api/v1/search \
+  -H 'Content-Type: application/json' \
+  -H 'X-Dev-User: priya.raman@northwind.example' \
+  -d '{"query":"deployment rollback","include_debug":true}'
+```
+
+Inspect chunk boundaries before anything is embedded:
+
+```bash
+python -m scripts.show_chunks ../corpus/engineering/authentication.md
+```
+
+> Ports are configurable in `.env` (`API_HOST_PORT`, `POSTGRES_HOST_PORT`) —
+> `docker compose up` fails rather than picking a free port if one is taken.
+
+### The demo corpus
+
+**Northwind Systems** is entirely fictional — 22 documents across engineering,
+HR, finance and legal, written for this project and safe to publish.
+`corpus/manifest.yaml` declares the permission topology, so anyone cloning this
+repo reproduces the same ACLs and the same benchmark.
+
+Deliberately built in:
+
+- `compensation-policy.md` and `performance-review-process.md` are **HR-only** —
+  the permission demo.
+- One user (Sofia) is in *two* departments, exercising array overlap rather
+  than single-group matching.
+- Five topics are **absent on purpose** (crypto payments, a Tokyo office,
+  sabbaticals, pet insurance, a bug bounty) so abstention is testable.
+- The expense policy records a superseded `$75` meal cap alongside the current
+  `$85`, so conflicting-source handling is testable.
 
 ---
 
 ## Project layout
 
 ```
-enterpriseiq/
-├── backend/
-│   ├── app/
-│   │   ├── api/routes/      # thin HTTP layer
-│   │   ├── core/            # config, logging
-│   │   ├── db/              # models, session, repositories
-│   │   ├── ingestion/       # parsers, chunking, manifest
-│   │   ├── retrieval/       # ports, vector, keyword, fusion, reranker, filters
-│   │   ├── generation/      # prompts, context, citations, grounding
-│   │   ├── evaluation/      # dataset, metrics, runner
-│   │   ├── services/        # orchestration
-│   │   └── main.py
-│   ├── alembic/versions/    # 0001_initial_schema.py
-│   ├── scripts/             # seed_users.py, entrypoint.sh
-│   └── tests/{unit,integration}/
-├── corpus/                  # synthetic Northwind Systems knowledge base
-│   └── manifest.yaml        # documents + their access groups
-├── evaluation/              # benchmark dataset and committed results
-├── docker-compose.yml
-└── .env.example
+backend/app/
+  api/          routes, dependencies, error envelope
+  core/         config, logging, identity
+  db/           models, session
+  ingestion/    parsers/ blocks chunking tokens pipeline manifest
+  retrieval/    ports types filters keyword vector fusion reranker pipeline
+  generation/   llm context prompts citations grounding confidence
+  evaluation/   dataset metrics runner report
+  services/     query_service
+corpus/         22 synthetic documents + manifest.yaml
+evaluation/     dataset.json + committed results
 ```
 
----
-
-## The demo corpus
-
-`corpus/` contains a synthetic knowledge base for **Northwind Systems, Inc.**,
-a fictional B2B logistics and payments company. Every document was written for
-this project; it contains no real company data and is safe to publish.
-
-`corpus/manifest.yaml` declares each document's metadata and access groups, so
-the permission topology is reproducible on any machine. The deliberate cases:
-
-| Document | Groups | Why it exists |
-|---|---|---|
-| `hr/compensation-policy.md` | `hr` | An engineer asking about it must get an abstention |
-| `hr/performance-review-process.md` | `hr` | Second HR-restricted document |
-| `finance/procurement-thresholds.md` | `finance` | Restricted, different department |
-| `legal/security-incident-legal-playbook.md` | `legal` | Restricted, third department |
-| `legal/vendor-policy.md` | `legal`, `finance` | Two-group document — tests array overlap |
-| `hr/leave-policy.md` | `all-employees` | Same department, unrestricted |
-
-The corpus also contains **deliberate gaps** — topics no document covers — so
-the evaluation set can measure whether the system correctly abstains instead of
-inventing an answer.
+Layering is enforced by convention: routes never import from `db/` or
+`retrieval/`. Routes → services → retrieval | generation | repositories.
 
 ---
 
-## Development
+## What's next
 
-```bash
-# Run the API against Docker's database, without the API container
-docker compose up -d db
-cd backend
-python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-alembic upgrade head
-python -m scripts.seed_users
-uvicorn app.main:app --reload
-
-# Tests
-pytest                      # unit tests, no database needed
-pytest -m integration       # schema + seed tests, needs `docker compose up -d db`
-ruff check . && ruff format --check .
-mypy app
-```
+- **A harder benchmark.** The current one is saturated; a larger corpus with
+  buried answers would make every number more meaningful and give the reranker
+  a fair test.
+- **Real BM25.** `ts_rank_cd` is cover-density ranking, not BM25 — no
+  term-frequency saturation, different length normalisation. `term_stats` and
+  `corpus_stats` are modelled and populated; the rescoring pass over FTS
+  candidates is the remaining work.
+- **Query rewriting**, measured against the same fixed dataset.
+- **OpenSearch**, when the corpus outgrows a single Postgres. One new
+  `Retriever`.
+- **Next.js frontend.** The API is stable; this is presentation.
 
 ---
 
-## Roadmap
+## Résumé description
 
-- **Step 1 (done)** — schema, config, health, identity seeding, corpus
-- **Step 2** — parsers, structure-aware chunking, embeddings, ingestion CLI
-- **Step 3** — vector + keyword retrieval, RRF fusion, ACL predicate, `/search`
-- **Step 4** — context assembly, grounded generation, server-side citations
-- **Step 5** — evaluation harness (Recall@k, MRR, nDCG, abstention accuracy)
-- **Then, each benchmarked against the frozen dataset** — reranking, query
-  rewriting, feedback, Next.js UI, GitHub connector, analytics
+> **EnterpriseIQ | Permission-Aware Enterprise RAG Platform**
+> Python, FastAPI, PostgreSQL, pgvector, Sentence Transformers, Claude, Docker
+>
+> - Engineered a permission-aware RAG platform combining dense vector retrieval,
+>   PostgreSQL full-text search and reciprocal rank fusion, enforcing
+>   document-level access control **inside the retrieval query** as a
+>   GIN-indexed array predicate rather than as a post-filter — achieving
+>   **recall@3 = 1.00** and **MRR = 0.98** with **zero permission leaks** across
+>   a 34-question benchmark.
+> - Implemented server-assigned citation IDs with post-hoc validation, so
+>   fabricated sources are structurally impossible, plus deterministic grounding
+>   verification and two-stage abstention — **100% abstention accuracy** (11/11
+>   correctly declined, 0 false refusals across 23 answerable questions).
+> - Built an automated evaluation harness measuring Recall@K, Precision@K, MRR,
+>   nDCG@K, citation precision, grounding and cost; used it to measure that a
+>   cross-encoder reranker delivered **no metric improvement for 54× latency**
+>   on this corpus, and shipped it disabled.
 
-Benchmark results will be committed under `evaluation/results/` as they are
-measured. Until then this README contains no performance claims.
+Every number above is reproducible: `python -m scripts.run_eval --full`.
