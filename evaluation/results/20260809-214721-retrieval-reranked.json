@@ -1,0 +1,1520 @@
+{
+  "generated_at": "2026-08-09T21:47:21.267089+00:00",
+  "mode": "retrieval",
+  "dataset_version": 1,
+  "config": {
+    "embedding_model": "BAAI/bge-base-en-v1.5",
+    "reranker_enabled": true,
+    "rrf_k": 60,
+    "keyword_top_k": 50,
+    "vector_top_k": 50,
+    "fusion_top_k": 30,
+    "chunk_target_tokens": 450,
+    "chunk_max_tokens": 700,
+    "eval_top_k": 10,
+    "llm_model": null
+  },
+  "duration_ms": 112711,
+  "retrieval": {
+    "cases": 23,
+    "recall_at_k": {
+      "1": 0.8913,
+      "3": 1.0,
+      "5": 1.0,
+      "10": 1.0
+    },
+    "precision_at_k": {
+      "1": 0.9565,
+      "3": 0.3768,
+      "5": 0.2261,
+      "10": 0.113
+    },
+    "ndcg_at_k": {
+      "1": 0.9565,
+      "3": 0.984,
+      "5": 0.984,
+      "10": 0.984
+    },
+    "mrr": 0.9783
+  },
+  "security": {
+    "cases_checked": 6,
+    "leaks": 0,
+    "leaked_cases": [],
+    "pass": true
+  },
+  "abstention": {},
+  "generation": {},
+  "system": {
+    "latency_ms": {
+      "p50": 2238,
+      "p95": 2840,
+      "max": 36654
+    },
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "total_cost_usd": 0.0
+  },
+  "cases": [
+    {
+      "case_id": "eng-auth-01",
+      "category": "factoid",
+      "question": "How do our services authenticate to each other?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/authentication.md"
+      ],
+      "retrieved_documents": [
+        "engineering/payment-service.md",
+        "engineering/authentication.md",
+        "engineering/incident-response.md",
+        "engineering/api-gateway.md",
+        "engineering/observability-standards.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 0.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 0.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 0.0,
+        "3": 0.6309,
+        "5": 0.6309,
+        "10": 0.6309
+      },
+      "reciprocal_rank": 0.5,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 36654
+    },
+    {
+      "case_id": "eng-auth-02",
+      "category": "factoid",
+      "question": "How long is a service access token valid for?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/authentication.md"
+      ],
+      "retrieved_documents": [
+        "engineering/authentication.md",
+        "engineering/payment-service.md",
+        "engineering/api-gateway.md",
+        "engineering/observability-standards.md",
+        "engineering/incident-response.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2307
+    },
+    {
+      "case_id": "eng-auth-03",
+      "category": "factoid",
+      "question": "How often do the JWT signing keys rotate?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/authentication.md"
+      ],
+      "retrieved_documents": [
+        "engineering/authentication.md",
+        "engineering/api-gateway.md",
+        "engineering/oncall-rotation.txt",
+        "engineering/payment-service.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2384
+    },
+    {
+      "case_id": "eng-auth-04",
+      "category": "factoid",
+      "question": "Do we use mTLS between internal services?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/authentication.md"
+      ],
+      "retrieved_documents": [
+        "engineering/authentication.md",
+        "engineering/payment-service.md",
+        "engineering/api-gateway.md",
+        "engineering/observability-standards.md",
+        "legal/nda-guidelines.md",
+        "hr/remote-work-policy.md",
+        "finance/reimbursement.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2168
+    },
+    {
+      "case_id": "eng-gw-01",
+      "category": "factoid",
+      "question": "What is the default API rate limit per client?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/api-gateway.md"
+      ],
+      "retrieved_documents": [
+        "engineering/api-gateway.md",
+        "engineering/authentication.md",
+        "finance/expense-policy.md",
+        "engineering/observability-standards.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2215
+    },
+    {
+      "case_id": "eng-gw-02",
+      "category": "factoid",
+      "question": "What HTTP status code do we return when a client exceeds its rate limit?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/api-gateway.md"
+      ],
+      "retrieved_documents": [
+        "engineering/api-gateway.md",
+        "engineering/observability-standards.md",
+        "engineering/authentication.md",
+        "engineering/payment-service.md",
+        "engineering/incident-response.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2545
+    },
+    {
+      "case_id": "eng-pay-01",
+      "category": "factoid",
+      "question": "Which header carries the payment webhook signature and how is it computed?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/payment-service.md"
+      ],
+      "retrieved_documents": [
+        "engineering/payment-service.md",
+        "engineering/api-gateway.md",
+        "engineering/authentication.md",
+        "engineering/oncall-rotation.txt",
+        "engineering/observability-standards.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2569
+    },
+    {
+      "case_id": "eng-pay-02",
+      "category": "factoid",
+      "question": "How long do we retain idempotency keys on the payments service?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/payment-service.md"
+      ],
+      "retrieved_documents": [
+        "engineering/payment-service.md",
+        "finance/customer-refund-policy.md",
+        "engineering/api-gateway.md",
+        "engineering/adr-0007-postgres-partitioning.md",
+        "engineering/deployment-runbook.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2234
+    },
+    {
+      "case_id": "eng-inc-01",
+      "category": "factoid",
+      "question": "How quickly must a SEV1 be acknowledged?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/incident-response.md"
+      ],
+      "retrieved_documents": [
+        "engineering/incident-response.md",
+        "engineering/oncall-rotation.txt",
+        "hr/remote-work-policy.md",
+        "engineering/observability-standards.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2185
+    },
+    {
+      "case_id": "eng-dep-01",
+      "category": "factoid",
+      "question": "Which services deploy using blue/green rather than a rolling update?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/deployment-runbook.md"
+      ],
+      "retrieved_documents": [
+        "engineering/deployment-runbook.md",
+        "engineering/api-gateway.md",
+        "engineering/payment-service.md",
+        "engineering/incident-response.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2017
+    },
+    {
+      "case_id": "fin-exp-01",
+      "category": "factoid",
+      "question": "What is the daily meal cap for domestic travel?",
+      "asked_by": "dana.okafor@northwind.example",
+      "expected_sources": [
+        "finance/expense-policy.md"
+      ],
+      "retrieved_documents": [
+        "finance/expense-policy.md",
+        "finance/reimbursement.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 1987
+    },
+    {
+      "case_id": "fin-exp-02",
+      "category": "factoid",
+      "question": "Above what amount do I need to keep a receipt?",
+      "asked_by": "dana.okafor@northwind.example",
+      "expected_sources": [
+        "finance/expense-policy.md"
+      ],
+      "retrieved_documents": [
+        "finance/expense-policy.md",
+        "finance/reimbursement.md",
+        "finance/procurement-thresholds.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2304
+    },
+    {
+      "case_id": "hr-leave-01",
+      "category": "factoid",
+      "question": "How many days of paid time off do employees accrue per year?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "hr/leave-policy.md"
+      ],
+      "retrieved_documents": [
+        "hr/leave-policy.md",
+        "hr/benefits.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2221
+    },
+    {
+      "case_id": "hr-leave-02",
+      "category": "factoid",
+      "question": "How much parental leave does a primary caregiver get?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "hr/leave-policy.md"
+      ],
+      "retrieved_documents": [
+        "hr/leave-policy.md",
+        "hr/remote-work-policy.md",
+        "hr/benefits.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2238
+    },
+    {
+      "case_id": "hr-ben-01",
+      "category": "factoid",
+      "question": "What is the 401k match?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "hr/benefits.md"
+      ],
+      "retrieved_documents": [
+        "hr/benefits.md",
+        "engineering/authentication.md",
+        "engineering/payment-service.md",
+        "engineering/api-gateway.md",
+        "engineering/oncall-rotation.txt"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2389
+    },
+    {
+      "case_id": "legal-ret-01",
+      "category": "factoid",
+      "question": "How long do we keep customer transaction records?",
+      "asked_by": "tom.lindqvist@northwind.example",
+      "expected_sources": [
+        "legal/data-retention.md"
+      ],
+      "retrieved_documents": [
+        "legal/data-retention.md",
+        "legal/security-incident-legal-playbook.md",
+        "finance/customer-refund-policy.md",
+        "legal/vendor-policy.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2408
+    },
+    {
+      "case_id": "legal-ret-02",
+      "category": "factoid",
+      "question": "How quickly must we fulfil a personal data deletion request?",
+      "asked_by": "tom.lindqvist@northwind.example",
+      "expected_sources": [
+        "legal/data-retention.md"
+      ],
+      "retrieved_documents": [
+        "legal/data-retention.md",
+        "legal/vendor-policy.md",
+        "legal/nda-guidelines.md",
+        "legal/security-incident-legal-playbook.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2326
+    },
+    {
+      "case_id": "fin-ref-01",
+      "category": "factoid",
+      "question": "What is our customer refund window?",
+      "asked_by": "dana.okafor@northwind.example",
+      "expected_sources": [
+        "finance/customer-refund-policy.md"
+      ],
+      "retrieved_documents": [
+        "finance/customer-refund-policy.md",
+        "finance/revenue-recognition.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2241
+    },
+    {
+      "case_id": "multi-01",
+      "category": "multi_hop",
+      "question": "How does the payments service authenticate, both as a service and for the end user?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/payment-service.md",
+        "engineering/authentication.md"
+      ],
+      "retrieved_documents": [
+        "engineering/authentication.md",
+        "engineering/payment-service.md",
+        "engineering/api-gateway.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 0.5,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.6667,
+        "5": 0.4,
+        "10": 0.2
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2159
+    },
+    {
+      "case_id": "multi-02",
+      "category": "multi_hop",
+      "question": "How long are application logs kept, and which system stores them?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/observability-standards.md",
+        "legal/data-retention.md"
+      ],
+      "retrieved_documents": [
+        "engineering/observability-standards.md",
+        "legal/data-retention.md",
+        "engineering/api-gateway.md",
+        "engineering/adr-0007-postgres-partitioning.md",
+        "engineering/deployment-runbook.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 0.5,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.6667,
+        "5": 0.4,
+        "10": 0.2
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2238
+    },
+    {
+      "case_id": "multi-03",
+      "category": "multi_hop",
+      "question": "If I want to buy a $60,000 vendor tool that processes customer personal data, what approvals do I need?",
+      "asked_by": "dana.okafor@northwind.example",
+      "expected_sources": [
+        "finance/procurement-thresholds.md",
+        "legal/vendor-policy.md"
+      ],
+      "retrieved_documents": [
+        "finance/procurement-thresholds.md",
+        "legal/vendor-policy.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 0.5,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.6667,
+        "5": 0.4,
+        "10": 0.2
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2334
+    },
+    {
+      "case_id": "multi-04",
+      "category": "multi_hop",
+      "question": "What is the meal cap and what was it before the change?",
+      "asked_by": "dana.okafor@northwind.example",
+      "expected_sources": [
+        "finance/expense-policy.md"
+      ],
+      "retrieved_documents": [
+        "finance/expense-policy.md",
+        "finance/reimbursement.md",
+        "hr/remote-work-policy.md",
+        "hr/benefits.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 1948
+    },
+    {
+      "case_id": "multi-05",
+      "category": "multi_hop",
+      "question": "A security incident may have exposed customer personal data. What are the engineering and legal obligations?",
+      "asked_by": "tom.lindqvist@northwind.example",
+      "expected_sources": [
+        "legal/security-incident-legal-playbook.md"
+      ],
+      "retrieved_documents": [
+        "legal/security-incident-legal-playbook.md",
+        "legal/nda-guidelines.md",
+        "legal/data-retention.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2373
+    },
+    {
+      "case_id": "perm-01",
+      "category": "permission_negative",
+      "question": "What are the salary bands and bonus targets for each level?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [],
+      "retrieved_documents": [
+        "hr/remote-work-policy.md",
+        "hr/leave-policy.md",
+        "hr/benefits.md",
+        "engineering/oncall-rotation.txt",
+        "finance/reimbursement.md",
+        "legal/nda-guidelines.md"
+      ],
+      "leaked": false,
+      "recall": {},
+      "precision": {},
+      "ndcg": {},
+      "reciprocal_rank": 0.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2233
+    },
+    {
+      "case_id": "perm-02",
+      "category": "permission_negative",
+      "question": "How are performance ratings calibrated and normalised across teams?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [],
+      "retrieved_documents": [
+        "hr/remote-work-policy.md",
+        "engineering/oncall-rotation.txt",
+        "legal/data-retention.md",
+        "legal/nda-guidelines.md",
+        "engineering/observability-standards.md",
+        "hr/leave-policy.md"
+      ],
+      "leaked": false,
+      "recall": {},
+      "precision": {},
+      "ndcg": {},
+      "reciprocal_rank": 0.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2161
+    },
+    {
+      "case_id": "perm-03",
+      "category": "permission_negative",
+      "question": "What are the purchase approval thresholds by role?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [],
+      "retrieved_documents": [
+        "finance/reimbursement.md",
+        "finance/expense-policy.md",
+        "hr/remote-work-policy.md",
+        "finance/customer-refund-policy.md",
+        "engineering/observability-standards.md",
+        "legal/data-retention.md"
+      ],
+      "leaked": false,
+      "recall": {},
+      "precision": {},
+      "ndcg": {},
+      "reciprocal_rank": 0.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2115
+    },
+    {
+      "case_id": "perm-04",
+      "category": "permission_negative",
+      "question": "How do we recognise subscription revenue under ASC 606?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [],
+      "retrieved_documents": [
+        "legal/data-retention.md",
+        "finance/customer-refund-policy.md",
+        "engineering/authentication.md",
+        "finance/reimbursement.md",
+        "finance/expense-policy.md",
+        "engineering/payment-service.md"
+      ],
+      "leaked": false,
+      "recall": {},
+      "precision": {},
+      "ndcg": {},
+      "reciprocal_rank": 0.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2818
+    },
+    {
+      "case_id": "perm-05",
+      "category": "permission_negative",
+      "question": "How does the payments service verify webhook signatures?",
+      "asked_by": "marcus.webb@northwind.example",
+      "expected_sources": [],
+      "retrieved_documents": [
+        "finance/customer-refund-policy.md",
+        "legal/data-retention.md",
+        "legal/nda-guidelines.md",
+        "hr/performance-review-process.md",
+        "finance/reimbursement.md"
+      ],
+      "leaked": false,
+      "recall": {},
+      "precision": {},
+      "ndcg": {},
+      "reciprocal_rank": 0.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2411
+    },
+    {
+      "case_id": "perm-06",
+      "category": "permission_negative",
+      "question": "What is the attorney-client privilege procedure for incident investigation materials?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [],
+      "retrieved_documents": [
+        "legal/nda-guidelines.md",
+        "legal/data-retention.md",
+        "engineering/incident-response.md",
+        "engineering/oncall-rotation.txt",
+        "engineering/deployment-runbook.md"
+      ],
+      "leaked": false,
+      "recall": {},
+      "precision": {},
+      "ndcg": {},
+      "reciprocal_rank": 0.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2350
+    },
+    {
+      "case_id": "unans-01",
+      "category": "unanswerable",
+      "question": "Do we accept cryptocurrency or stablecoin payments?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [],
+      "retrieved_documents": [
+        "engineering/payment-service.md",
+        "engineering/api-gateway.md",
+        "engineering/adr-0007-postgres-partitioning.md",
+        "engineering/authentication.md",
+        "finance/customer-refund-policy.md"
+      ],
+      "leaked": false,
+      "recall": {},
+      "precision": {},
+      "ndcg": {},
+      "reciprocal_rank": 0.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2831
+    },
+    {
+      "case_id": "unans-02",
+      "category": "unanswerable",
+      "question": "What are the office hours for our Tokyo office?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [],
+      "retrieved_documents": [
+        "hr/leave-policy.md",
+        "hr/remote-work-policy.md",
+        "engineering/oncall-rotation.txt",
+        "engineering/incident-response.md",
+        "engineering/payment-service.md",
+        "hr/benefits.md"
+      ],
+      "leaked": false,
+      "recall": {},
+      "precision": {},
+      "ndcg": {},
+      "reciprocal_rank": 0.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2135
+    },
+    {
+      "case_id": "unans-03",
+      "category": "unanswerable",
+      "question": "What is our sabbatical policy after five years of service?",
+      "asked_by": "marcus.webb@northwind.example",
+      "expected_sources": [],
+      "retrieved_documents": [
+        "hr/leave-policy.md",
+        "hr/compensation-policy.md"
+      ],
+      "leaked": false,
+      "recall": {},
+      "precision": {},
+      "ndcg": {},
+      "reciprocal_rank": 0.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2013
+    },
+    {
+      "case_id": "unans-04",
+      "category": "unanswerable",
+      "question": "Does the company offer pet insurance as a benefit?",
+      "asked_by": "marcus.webb@northwind.example",
+      "expected_sources": [],
+      "retrieved_documents": [
+        "finance/expense-policy.md",
+        "hr/benefits.md",
+        "hr/leave-policy.md",
+        "hr/compensation-policy.md"
+      ],
+      "leaked": false,
+      "recall": {},
+      "precision": {},
+      "ndcg": {},
+      "reciprocal_rank": 0.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2200
+    },
+    {
+      "case_id": "unans-05",
+      "category": "unanswerable",
+      "question": "How much does our bug bounty program pay for a critical vulnerability?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [],
+      "retrieved_documents": [
+        "engineering/incident-response.md",
+        "hr/benefits.md",
+        "engineering/oncall-rotation.txt",
+        "legal/nda-guidelines.md",
+        "engineering/observability-standards.md",
+        "engineering/authentication.md",
+        "finance/expense-policy.md"
+      ],
+      "leaked": false,
+      "recall": {},
+      "precision": {},
+      "ndcg": {},
+      "reciprocal_rank": 0.0,
+      "answered": null,
+      "abstained": null,
+      "abstention_correct": null,
+      "answer": "",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": null,
+      "confidence": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0,
+      "latency_ms": 2840
+    }
+  ]
+}

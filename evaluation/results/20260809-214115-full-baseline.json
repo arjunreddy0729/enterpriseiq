@@ -1,0 +1,1570 @@
+{
+  "generated_at": "2026-08-09T21:41:15.126115+00:00",
+  "mode": "full",
+  "dataset_version": 1,
+  "config": {
+    "embedding_model": "BAAI/bge-base-en-v1.5",
+    "reranker_enabled": false,
+    "rrf_k": 60,
+    "keyword_top_k": 50,
+    "vector_top_k": 50,
+    "fusion_top_k": 30,
+    "chunk_target_tokens": 450,
+    "chunk_max_tokens": 700,
+    "eval_top_k": 10,
+    "llm_model": "claude-opus-5"
+  },
+  "duration_ms": 150898,
+  "retrieval": {
+    "cases": 23,
+    "recall_at_k": {
+      "1": 0.8913,
+      "3": 1.0,
+      "5": 1.0,
+      "10": 1.0
+    },
+    "precision_at_k": {
+      "1": 0.9565,
+      "3": 0.3768,
+      "5": 0.2261,
+      "10": 0.113
+    },
+    "ndcg_at_k": {
+      "1": 0.9565,
+      "3": 0.984,
+      "5": 0.984,
+      "10": 0.984
+    },
+    "mrr": 0.9783
+  },
+  "security": {
+    "cases_checked": 6,
+    "leaks": 0,
+    "leaked_cases": [],
+    "pass": true
+  },
+  "abstention": {
+    "accuracy": 1.0,
+    "correctly_declined": 11,
+    "should_decline": 11,
+    "wrongly_declined": 0,
+    "should_answer": 23
+  },
+  "generation": {
+    "answered": 23,
+    "fact_coverage": 1.0,
+    "citation_precision": 0.7899,
+    "grounding": 0.7601,
+    "confidence_bands": {
+      "high": 11,
+      "medium": 5,
+      "low": 7
+    }
+  },
+  "system": {
+    "latency_ms": {
+      "p50": 3967,
+      "p95": 11398,
+      "max": 11858
+    },
+    "input_tokens": 148699,
+    "output_tokens": 5375,
+    "total_cost_usd": 0.8779
+  },
+  "cases": [
+    {
+      "case_id": "eng-auth-01",
+      "category": "factoid",
+      "question": "How do our services authenticate to each other?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/authentication.md"
+      ],
+      "retrieved_documents": [
+        "engineering/payment-service.md",
+        "engineering/authentication.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 0.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 0.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 0.0,
+        "3": 0.6309,
+        "5": 0.6309,
+        "10": 0.6309
+      },
+      "reciprocal_rank": 0.5,
+      "answered": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "answer": "Internal service-to-service authentication uses OAuth 2.0 client credentials tokens issued by identity-service at `https://identity.northwind.internal/oauth2/token`; the response includes `access_token`, `token_type: \"Bearer\"`, and `expires_in: 3600` [1]. These access tokens are RS256 JWTs with a 3600-second TTL, there is no refresh token in this plane, and the house convention is to cache and refresh proactively at ~80% of remaining lifetime (roughly 48 minutes) [1]. The calling service presents its token in the standard `Authorization: Bearer` header, and the receiving service checks that it is a known service holding the scopes required for the route [2][3].\n\nNorthwind explicitly does **not** use mTLS internally \u2014 no client certificates, no certificate-based service identity, no sidecar rotating certs; internal transport is TLS with server authentication only, and service identity comes exclusively from the client-credentials token [4][5]. Separately, when a request carries an end-user token forwarded by api-gateway in `X-Northwind-User-Token`, the downstream service must independently re-validate it (RS256 signature via JWKS by `kid`, `exp`/`nbf`, `iss`, `aud`, and required scope) rather than trusting the gateway [2][5].",
+      "cited_documents": [
+        "engineering/authentication.md",
+        "engineering/payment-service.md"
+      ],
+      "citation_precision": 0.5,
+      "fact_coverage": 1.0,
+      "grounding_score": 0.4,
+      "confidence": "low",
+      "input_tokens": 4504,
+      "output_tokens": 437,
+      "cost_usd": 0.033445,
+      "latency_ms": 11858
+    },
+    {
+      "case_id": "eng-auth-02",
+      "category": "factoid",
+      "question": "How long is a service access token valid for?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/authentication.md"
+      ],
+      "retrieved_documents": [
+        "engineering/authentication.md",
+        "engineering/payment-service.md",
+        "engineering/api-gateway.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "answer": "Service-to-service access tokens are valid for 3600 seconds (one hour) [1][2]. They are RS256 JWTs obtained via the OAuth 2.0 client credentials grant, and there is no refresh token in this plane \u2014 an expired service token means re-running the grant [1]. The house convention is to cache and refresh proactively at 80% of remaining lifetime, roughly 48 minutes, rather than waiting for a 401 [1].",
+      "cited_documents": [
+        "engineering/authentication.md",
+        "engineering/payment-service.md"
+      ],
+      "citation_precision": 0.5,
+      "fact_coverage": 1.0,
+      "grounding_score": 1.0,
+      "confidence": "high",
+      "input_tokens": 4693,
+      "output_tokens": 146,
+      "cost_usd": 0.027115,
+      "latency_ms": 4227
+    },
+    {
+      "case_id": "eng-auth-03",
+      "category": "factoid",
+      "question": "How often do the JWT signing keys rotate?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/authentication.md"
+      ],
+      "retrieved_documents": [
+        "engineering/authentication.md",
+        "engineering/api-gateway.md",
+        "engineering/payment-service.md",
+        "engineering/oncall-rotation.txt"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "answer": "Signing keys rotate every 90 days, with a 24-hour overlap window during which both the outgoing and incoming keys are present in the JWKS and valid for verification [1][2]. New tokens are signed with the new key from the start of that overlap [1]. Because of this, validators should select keys by `kid` and refetch on an unknown `kid`; a stale-cache bug typically surfaces as a wave of `unknown_kid` failures at the rotation boundary roughly every 90 days [1][3].",
+      "cited_documents": [
+        "engineering/authentication.md",
+        "engineering/api-gateway.md"
+      ],
+      "citation_precision": 0.5,
+      "fact_coverage": 1.0,
+      "grounding_score": 1.0,
+      "confidence": "high",
+      "input_tokens": 4697,
+      "output_tokens": 164,
+      "cost_usd": 0.027585,
+      "latency_ms": 6646
+    },
+    {
+      "case_id": "eng-auth-04",
+      "category": "factoid",
+      "question": "Do we use mTLS between internal services?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/authentication.md"
+      ],
+      "retrieved_documents": [
+        "engineering/authentication.md",
+        "engineering/payment-service.md",
+        "engineering/deployment-runbook.md",
+        "engineering/api-gateway.md",
+        "engineering/observability-standards.md",
+        "engineering/oncall-rotation.txt",
+        "finance/customer-refund-policy.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "answer": "No. Northwind does not use mTLS between internal services \u2014 there are no client certificates on internal calls, no certificate-based service identity, and no sidecar rotating certificates; internal transport is TLS with server authentication only [1]. Service identity comes exclusively from application-layer OAuth 2.0 client credentials bearer tokens [1][2]. Gateway-to-backend traffic inside `northwind-prod` follows the same rule: TLS with server auth only, with client authentication done via the bearer token [3]. A design doc that assumes mutual TLS inside the cluster is wrong [1].",
+      "cited_documents": [
+        "engineering/authentication.md",
+        "engineering/payment-service.md",
+        "engineering/api-gateway.md"
+      ],
+      "citation_precision": 0.3333333333333333,
+      "fact_coverage": 1.0,
+      "grounding_score": 0.75,
+      "confidence": "medium",
+      "input_tokens": 4251,
+      "output_tokens": 203,
+      "cost_usd": 0.02633,
+      "latency_ms": 4321
+    },
+    {
+      "case_id": "eng-gw-01",
+      "category": "factoid",
+      "question": "What is the default API rate limit per client?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/api-gateway.md"
+      ],
+      "retrieved_documents": [
+        "engineering/api-gateway.md",
+        "engineering/observability-standards.md",
+        "engineering/authentication.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "answer": "The default rate limit is 1000 requests per minute per `client_id`, with a burst of 200 [1][2]. It's implemented as a token bucket \u2014 1000 tokens refilled over 60 seconds, with bucket capacity 200 to absorb bursts \u2014 and is applied per `client_id` rather than per IP address [1]. Callers exceeding the limit receive an HTTP 429 with a `Retry-After` header giving the retry interval in seconds [1][3]. Limits are enforced at the edge only; backend services do not implement their own general-purpose rate limiting [1].",
+      "cited_documents": [
+        "engineering/api-gateway.md",
+        "engineering/authentication.md"
+      ],
+      "citation_precision": 0.5,
+      "fact_coverage": 1.0,
+      "grounding_score": 1.0,
+      "confidence": "high",
+      "input_tokens": 4345,
+      "output_tokens": 190,
+      "cost_usd": 0.026475,
+      "latency_ms": 4104
+    },
+    {
+      "case_id": "eng-gw-02",
+      "category": "factoid",
+      "question": "What HTTP status code do we return when a client exceeds its rate limit?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/api-gateway.md"
+      ],
+      "retrieved_documents": [
+        "engineering/api-gateway.md",
+        "engineering/authentication.md",
+        "engineering/observability-standards.md",
+        "engineering/payment-service.md",
+        "engineering/incident-response.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "answer": "When a client exceeds its rate limit, the gateway returns **HTTP 429** along with a `Retry-After` header giving, in seconds, when the caller may retry [1][2]. The limit itself is enforced at the edge, at 1000 requests per minute per `client_id` with a burst of 200 [1][3].",
+      "cited_documents": [
+        "engineering/api-gateway.md",
+        "engineering/authentication.md"
+      ],
+      "citation_precision": 0.5,
+      "fact_coverage": 1.0,
+      "grounding_score": 1.0,
+      "confidence": "high",
+      "input_tokens": 4813,
+      "output_tokens": 104,
+      "cost_usd": 0.026665,
+      "latency_ms": 3512
+    },
+    {
+      "case_id": "eng-pay-01",
+      "category": "factoid",
+      "question": "Which header carries the payment webhook signature and how is it computed?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/payment-service.md"
+      ],
+      "retrieved_documents": [
+        "engineering/payment-service.md",
+        "engineering/authentication.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "answer": "Cardinal webhook signatures arrive in the **`X-Cardinal-Signature`** header, which carries an HMAC-SHA256 of the raw request body computed under the shared webhook secret [1]. It must be verified against the raw body bytes before any JSON parsing or re-serialization, since round-tripping through a JSON parser reorders keys and breaks the signature, and the comparison must be constant-time rather than `==` on hex strings [1]. Halcyon webhooks come in on a separate path with a separate secret but use the same HMAC-SHA256 construction [1]. An invalid signature returns `401`, and the payload is discarded and logged as headers plus a body hash only [1].",
+      "cited_documents": [
+        "engineering/payment-service.md"
+      ],
+      "citation_precision": 1.0,
+      "fact_coverage": 1.0,
+      "grounding_score": 1.0,
+      "confidence": "high",
+      "input_tokens": 4799,
+      "output_tokens": 228,
+      "cost_usd": 0.029695,
+      "latency_ms": 4527
+    },
+    {
+      "case_id": "eng-pay-02",
+      "category": "factoid",
+      "question": "How long do we retain idempotency keys on the payments service?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/payment-service.md"
+      ],
+      "retrieved_documents": [
+        "engineering/payment-service.md",
+        "engineering/adr-0007-postgres-partitioning.md",
+        "engineering/authentication.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "answer": "Idempotency keys are retained for 24 hours; after that the key is forgotten and a replay would be treated as a new request [1]. Within that window, a replay returns the original response byte for byte with the original status code, while a replay with a different body for the same key returns `409 Conflict` [1]. The schema reflects this: the `idempotency_keys` table rows are purged after 24 hours [2]. This is why client retry budgets must sit well inside a day \u2014 a retry 26 hours later is a second charge, not a retry [1].",
+      "cited_documents": [
+        "engineering/payment-service.md"
+      ],
+      "citation_precision": 1.0,
+      "fact_coverage": 1.0,
+      "grounding_score": 0.75,
+      "confidence": "medium",
+      "input_tokens": 4772,
+      "output_tokens": 168,
+      "cost_usd": 0.02806,
+      "latency_ms": 4730
+    },
+    {
+      "case_id": "eng-inc-01",
+      "category": "factoid",
+      "question": "How quickly must a SEV1 be acknowledged?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/incident-response.md"
+      ],
+      "retrieved_documents": [
+        "engineering/incident-response.md",
+        "engineering/oncall-rotation.txt",
+        "hr/remote-work-policy.md",
+        "engineering/observability-standards.md",
+        "engineering/payment-service.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "answer": "A SEV1 must be acknowledged within 15 minutes [1][2]. Acknowledgement means a human has seen the page and taken ownership \u2014 not that the problem is understood or fixed [1]. If the primary on-call has not acknowledged within that 15-minute target, the page escalates automatically to the secondary on-call for the same team [3][4].",
+      "cited_documents": [
+        "engineering/incident-response.md",
+        "hr/remote-work-policy.md",
+        "engineering/oncall-rotation.txt"
+      ],
+      "citation_precision": 0.3333333333333333,
+      "fact_coverage": 1.0,
+      "grounding_score": 1.0,
+      "confidence": "high",
+      "input_tokens": 4686,
+      "output_tokens": 114,
+      "cost_usd": 0.02628,
+      "latency_ms": 3967
+    },
+    {
+      "case_id": "eng-dep-01",
+      "category": "factoid",
+      "question": "Which services deploy using blue/green rather than a rolling update?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/deployment-runbook.md"
+      ],
+      "retrieved_documents": [
+        "engineering/deployment-runbook.md",
+        "engineering/payment-service.md",
+        "engineering/api-gateway.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "answer": "payments-service and ledger-service use blue/green; all other listed services (api-gateway, identity-service, shipment-service, notification-service) use rolling updates, which are the default [1][2]. The reason is that a partial rollout with two code versions writing to the money path simultaneously is not an acceptable risk, even briefly [1]. Consequences include needing cluster headroom for two full stacks during cutover, and rollback being a single service-selector switch that takes seconds [1][3][4].",
+      "cited_documents": [
+        "engineering/deployment-runbook.md",
+        "engineering/api-gateway.md"
+      ],
+      "citation_precision": 0.5,
+      "fact_coverage": 1.0,
+      "grounding_score": 1.0,
+      "confidence": "high",
+      "input_tokens": 3934,
+      "output_tokens": 158,
+      "cost_usd": 0.02362,
+      "latency_ms": 3838
+    },
+    {
+      "case_id": "fin-exp-01",
+      "category": "factoid",
+      "question": "What is the daily meal cap for domestic travel?",
+      "asked_by": "dana.okafor@northwind.example",
+      "expected_sources": [
+        "finance/expense-policy.md"
+      ],
+      "retrieved_documents": [
+        "finance/expense-policy.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "answer": "The domestic meal cap is $85 per day, covering all meals and non-alcoholic beverages combined [1][2]. This was raised from $75/day effective 1 January 2026, and the cap that applies is the one in force on the expense date, so 2025 expenses still use $75/day even if filed later [3][4]. Receipts are required for items over $25 [2].",
+      "cited_documents": [
+        "finance/expense-policy.md"
+      ],
+      "citation_precision": 1.0,
+      "fact_coverage": 1.0,
+      "grounding_score": 1.0,
+      "confidence": "high",
+      "input_tokens": 4116,
+      "output_tokens": 118,
+      "cost_usd": 0.02353,
+      "latency_ms": 3995
+    },
+    {
+      "case_id": "fin-exp-02",
+      "category": "factoid",
+      "question": "Above what amount do I need to keep a receipt?",
+      "asked_by": "dana.okafor@northwind.example",
+      "expected_sources": [
+        "finance/expense-policy.md"
+      ],
+      "retrieved_documents": [
+        "finance/expense-policy.md",
+        "finance/reimbursement.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "answer": "Receipts are required for any expense over $25 [1][2]. However, some categories require a receipt regardless of amount \u2014 hotels, airfare, rental cars, and client entertainment [1][3][4]. Personal vehicle mileage requires a log rather than a receipt [3].",
+      "cited_documents": [
+        "finance/expense-policy.md"
+      ],
+      "citation_precision": 1.0,
+      "fact_coverage": 1.0,
+      "grounding_score": 0.667,
+      "confidence": "medium",
+      "input_tokens": 4135,
+      "output_tokens": 90,
+      "cost_usd": 0.022925,
+      "latency_ms": 5370
+    },
+    {
+      "case_id": "hr-leave-01",
+      "category": "factoid",
+      "question": "How many days of paid time off do employees accrue per year?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "hr/leave-policy.md"
+      ],
+      "retrieved_documents": [
+        "hr/leave-policy.md",
+        "hr/benefits.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "answer": "Full-time employees accrue **20 days of PTO per year** [1][2]. Accrual is monthly and even at 1.667 days per month, credited on the last calendar day of the month, with nothing front-loaded [1]. New hires accrue from their start date, prorated for the first partial month, and part-time employees accrue pro rata [1][3].",
+      "cited_documents": [
+        "hr/leave-policy.md"
+      ],
+      "citation_precision": 1.0,
+      "fact_coverage": 1.0,
+      "grounding_score": 0.333,
+      "confidence": "low",
+      "input_tokens": 4362,
+      "output_tokens": 113,
+      "cost_usd": 0.024635,
+      "latency_ms": 3414
+    },
+    {
+      "case_id": "hr-leave-02",
+      "category": "factoid",
+      "question": "How much parental leave does a primary caregiver get?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "hr/leave-policy.md"
+      ],
+      "retrieved_documents": [
+        "hr/leave-policy.md",
+        "hr/benefits.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "answer": "A primary caregiver gets 16 weeks of parental leave at 100% of base salary [1][2]. It's available from day one with no tenure requirement, must begin within the child's first 12 months (or within 12 months of placement), and can be taken in up to two blocks with a two-week minimum per block [2]. Benefits continue unchanged and equity keeps vesting during the leave [2][3].",
+      "cited_documents": [
+        "hr/leave-policy.md",
+        "hr/benefits.md"
+      ],
+      "citation_precision": 0.5,
+      "fact_coverage": 1.0,
+      "grounding_score": 1.0,
+      "confidence": "high",
+      "input_tokens": 4294,
+      "output_tokens": 128,
+      "cost_usd": 0.02467,
+      "latency_ms": 3303
+    },
+    {
+      "case_id": "hr-ben-01",
+      "category": "factoid",
+      "question": "What is the 401k match?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "hr/benefits.md"
+      ],
+      "retrieved_documents": [
+        "hr/benefits.md",
+        "engineering/authentication.md",
+        "engineering/deployment-runbook.md",
+        "engineering/api-gateway.md",
+        "engineering/oncall-rotation.txt"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "answer": "Northwind matches 4% of eligible compensation for US employees' 401(k), and the match is immediately vested with no vesting schedule or cliff [1]. You're eligible from your first paycheck with no waiting period, and both traditional (pre-tax) and Roth contributions are supported [1]. The match mirrors what you contribute up to 4% \u2014 contributing 2% earns a 2% match, not 4% [1]. If you leave, the full balance including employer match is yours to keep or roll over [2]. Note this is a US plan; Ireland-based employees participate in a locally administered arrangement of equivalent employer value [1].",
+      "cited_documents": [
+        "hr/benefits.md"
+      ],
+      "citation_precision": 1.0,
+      "fact_coverage": 1.0,
+      "grounding_score": 1.0,
+      "confidence": "high",
+      "input_tokens": 4565,
+      "output_tokens": 204,
+      "cost_usd": 0.027925,
+      "latency_ms": 8765
+    },
+    {
+      "case_id": "legal-ret-01",
+      "category": "factoid",
+      "question": "How long do we keep customer transaction records?",
+      "asked_by": "tom.lindqvist@northwind.example",
+      "expected_sources": [
+        "legal/data-retention.md"
+      ],
+      "retrieved_documents": [
+        "legal/data-retention.md",
+        "finance/customer-refund-policy.md",
+        "legal/security-incident-legal-playbook.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "answer": "Customer transaction records \u2014 payments, ledger entries, and shipment records \u2014 are retained for 7 years, based on financial recordkeeping and tax obligations, revenue recognition support under ASC 606, and dispute/chargeback defence; retention is enforced by the ledger-service and payments-service archival jobs [1]. The 7-year clock starts at the date of the transaction, not the end of the customer relationship, so a customer who leaves in 2026 still has their 2024 records retained into 2031 [2]. If a deletion request arrives for records that must be kept the full 7 years, the record is retained and the personal fields not required for the financial purpose are removed or truncated instead [3].",
+      "cited_documents": [
+        "legal/data-retention.md"
+      ],
+      "citation_precision": 1.0,
+      "fact_coverage": 1.0,
+      "grounding_score": 0.333,
+      "confidence": "low",
+      "input_tokens": 4165,
+      "output_tokens": 220,
+      "cost_usd": 0.026325,
+      "latency_ms": 4927
+    },
+    {
+      "case_id": "legal-ret-02",
+      "category": "factoid",
+      "question": "How quickly must we fulfil a personal data deletion request?",
+      "asked_by": "tom.lindqvist@northwind.example",
+      "expected_sources": [
+        "legal/data-retention.md"
+      ],
+      "retrieved_documents": [
+        "legal/data-retention.md",
+        "legal/vendor-policy.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "answer": "Northwind fulfils verified deletion requests within 30 days of verification, with the clock starting when identity verification completes rather than when the request arrives; verification itself should normally finish within 5 business days [1]. Confirmation is sent back to the requester once the owning team confirms completion, always inside that 30-day commitment [2]. Note that a legal hold suspends this: pending requests are held rather than refused, and the requester is told the request will be completed when the legal obligation lapses [3]. Also, deleted records persist in backups for up to 35 days, and requesters should not be told their data is gone everywhere immediately [4].",
+      "cited_documents": [
+        "legal/data-retention.md"
+      ],
+      "citation_precision": 1.0,
+      "fact_coverage": 1.0,
+      "grounding_score": 0.5,
+      "confidence": "low",
+      "input_tokens": 4366,
+      "output_tokens": 201,
+      "cost_usd": 0.026855,
+      "latency_ms": 5515
+    },
+    {
+      "case_id": "fin-ref-01",
+      "category": "factoid",
+      "question": "What is our customer refund window?",
+      "asked_by": "dana.okafor@northwind.example",
+      "expected_sources": [
+        "finance/customer-refund-policy.md"
+      ],
+      "retrieved_documents": [
+        "finance/customer-refund-policy.md",
+        "finance/revenue-recognition.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "answer": "Refund requests must be made within **30 days of the invoice date** [1][2]. The window runs from the invoice date \u2014 not the payment date, the card charge date, or when the customer noticed \u2014 so a 1 March invoice paid on 25 March still expires 31 March [2]. What counts is the date the customer *requests* the refund (logged in the billing system), not when it's approved, so a day-29 request is valid even if approved on day 34 [2]. Outside 30 days the default answer is no, with exceptions decided by Finance rather than the person taking the request [2]. One exception: duplicate charges are always refunded with no 30-day limit [3].",
+      "cited_documents": [
+        "finance/customer-refund-policy.md"
+      ],
+      "citation_precision": 1.0,
+      "fact_coverage": 1.0,
+      "grounding_score": 0.8,
+      "confidence": "medium",
+      "input_tokens": 4374,
+      "output_tokens": 222,
+      "cost_usd": 0.02742,
+      "latency_ms": 4868
+    },
+    {
+      "case_id": "multi-01",
+      "category": "multi_hop",
+      "question": "How does the payments service authenticate, both as a service and for the end user?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/payment-service.md",
+        "engineering/authentication.md"
+      ],
+      "retrieved_documents": [
+        "engineering/payment-service.md",
+        "engineering/authentication.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 0.5,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.6667,
+        "5": 0.4,
+        "10": 0.2
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "answer": "payments-service participates in both authentication planes. As a service, it obtains its own access token from identity-service via the OAuth 2.0 client credentials grant at `https://identity.northwind.internal/oauth2/token`; these are RS256 JWTs with a 3600-second TTL, and this is the identity it presents to ledger-service [1][2]. There is no mTLS between payments-service and other internal services \u2014 service identity is entirely application-layer bearer tokens, arriving in the standard `Authorization: Bearer` header [1][3].\n\nFor the end user, api-gateway validates the end-user JWT at the edge and forwards it in the `X-Northwind-User-Token` header, but payments-service independently re-validates it: RS256 signature against the JWKS at `https://identity.northwind.internal/.well-known/jwks.json`, then `exp`, `iss`, and `aud` [1][3]. The gateway is never trusted blindly \u2014 a forged `X-Northwind-User-Token` sent directly to the service's internal address gets a 401, and a conformance test asserts this [1]. Finally, the required scope is checked per endpoint (`payments:read`, `payments:write`, `payments:refund`), with insufficient scope returning 403 rather than 401, and `payments:write` deliberately not implying `payments:refund` [1][4][5].",
+      "cited_documents": [
+        "engineering/payment-service.md",
+        "engineering/authentication.md"
+      ],
+      "citation_precision": 1.0,
+      "fact_coverage": 1.0,
+      "grounding_score": 1.0,
+      "confidence": "medium",
+      "input_tokens": 4433,
+      "output_tokens": 444,
+      "cost_usd": 0.033265,
+      "latency_ms": 6615
+    },
+    {
+      "case_id": "multi-02",
+      "category": "multi_hop",
+      "question": "How long are application logs kept, and which system stores them?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/observability-standards.md",
+        "legal/data-retention.md"
+      ],
+      "retrieved_documents": [
+        "legal/data-retention.md",
+        "engineering/observability-standards.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 0.5,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.6667,
+        "5": 0.4,
+        "10": 0.2
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "answer": "Application logs are retained for 90 days [1][2]. They are stored in Loki, with the retention enforced by the Loki retention configuration [2][1]. The 90-day period is a legal/compliance decision rather than an engineering one, and nothing should depend on application logs older than that [2]; Engineering must not extend Loki retention for a single service without Privacy Counsel sign-off [3].",
+      "cited_documents": [
+        "legal/data-retention.md",
+        "engineering/observability-standards.md"
+      ],
+      "citation_precision": 1.0,
+      "fact_coverage": 1.0,
+      "grounding_score": 1.0,
+      "confidence": "high",
+      "input_tokens": 4412,
+      "output_tokens": 128,
+      "cost_usd": 0.02526,
+      "latency_ms": 3951
+    },
+    {
+      "case_id": "multi-03",
+      "category": "multi_hop",
+      "question": "If I want to buy a $60,000 vendor tool that processes customer personal data, what approvals do I need?",
+      "asked_by": "dana.okafor@northwind.example",
+      "expected_sources": [
+        "finance/procurement-thresholds.md",
+        "legal/vendor-policy.md"
+      ],
+      "retrieved_documents": [
+        "legal/vendor-policy.md",
+        "finance/procurement-thresholds.md",
+        "legal/data-retention.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 0.5,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.6667,
+        "5": 0.4,
+        "10": 0.2
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "answer": "At $60,000 the spend approval sits with the VP Finance (Ken Whitaker), and because approval is cumulative rather than substitutive, the budget owner and the director of the owning function must also have agreed it belongs in their plan [1]. If the purchase is unbudgeted, it moves one band higher than its value would otherwise require [2].\n\nIn parallel, the vendor risk track applies: because it processes customer personal data, the intake questionnaire answer `customer_personal_data: true` forces Tier 1 diligence and pulls in Privacy Counsel [3], and the vendor must have a security review, a signed DPA, and a current SOC 2 Type II report reviewed annually \u2014 refusal of any of the three means no purchase at any price [4][5]. File the purchase request and the vendor intake questionnaire the same day, since Tier 1 diligence runs three to four weeks [5]. A PO is required at this value, and Finance will not release it until Legal marks diligence complete, while Legal will not sign until Finance confirms the spend approval [2][5].",
+      "cited_documents": [
+        "finance/procurement-thresholds.md",
+        "legal/vendor-policy.md"
+      ],
+      "citation_precision": 1.0,
+      "fact_coverage": 1.0,
+      "grounding_score": 0.2,
+      "confidence": "low",
+      "input_tokens": 4425,
+      "output_tokens": 480,
+      "cost_usd": 0.034125,
+      "latency_ms": 7741
+    },
+    {
+      "case_id": "multi-04",
+      "category": "multi_hop",
+      "question": "What is the meal cap and what was it before the change?",
+      "asked_by": "dana.okafor@northwind.example",
+      "expected_sources": [
+        "finance/expense-policy.md"
+      ],
+      "retrieved_documents": [
+        "finance/expense-policy.md",
+        "finance/reimbursement.md",
+        "finance/revenue-recognition.md",
+        "hr/benefits.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "answer": "The domestic meal cap is **$85 per day**, covering all meals and non-alcoholic beverages combined, with receipts required over $25 [1][2]. It was raised from **$75/day** to $85/day effective 1 January 2026 [3][4]. The cap that applies is the one in force on the expense date, not the submission date, so 2025 expenses filed in January still use $75 [3]. Note that this figure is domestic only \u2014 international meals are reimbursed against a published per-diem for the destination city [1].",
+      "cited_documents": [
+        "finance/expense-policy.md"
+      ],
+      "citation_precision": 1.0,
+      "fact_coverage": 1.0,
+      "grounding_score": 0.25,
+      "confidence": "low",
+      "input_tokens": 3997,
+      "output_tokens": 197,
+      "cost_usd": 0.02491,
+      "latency_ms": 4667
+    },
+    {
+      "case_id": "multi-05",
+      "category": "multi_hop",
+      "question": "A security incident may have exposed customer personal data. What are the engineering and legal obligations?",
+      "asked_by": "tom.lindqvist@northwind.example",
+      "expected_sources": [
+        "legal/security-incident-legal-playbook.md"
+      ],
+      "retrieved_documents": [
+        "legal/security-incident-legal-playbook.md",
+        "legal/data-retention.md"
+      ],
+      "leaked": false,
+      "recall": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "precision": {
+        "1": 1.0,
+        "3": 0.3333,
+        "5": 0.2,
+        "10": 0.1
+      },
+      "ndcg": {
+        "1": 1.0,
+        "3": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "reciprocal_rank": 1.0,
+      "answered": true,
+      "abstained": false,
+      "abstention_correct": true,
+      "answer": "**Legal side (well covered):** Legal must be engaged immediately, without waiting to be asked, for any incident at any severity where personal data may have been accessed, exfiltrated, or altered by an unauthorised party, and Legal must acknowledge within the engineering ack targets \u2014 15 minutes for SEV1, 30 for SEV2 \u2014 joining the incident bridge rather than working over email [1]. Northwind must report incidents involving personal data to affected customers within 72 hours of confirmation, where \"confirmation\" is Legal and the IC jointly concluding personal data was involved \u2014 not full scope or root cause \u2014 and a shorter contractual window overrides the 72 hours [2]. Privacy Counsel runs a separate regulatory analysis in parallel (controller vs. processor, jurisdictions, EU/Dublin data, US state statutes, card obligations); where Northwind is a processor it notifies the customer without undue delay and supports their filing rather than filing for them, and every conclusion \u2014 including \"no notification required\" \u2014 is written up and filed in the privileged matter [2][3]. No external communication about the incident leaves Northwind without Legal approval, reviewed for truth on the evidence actually held, with no statement that no data was affected before the investigation supports it [4]. Post-incident, the notification memo is filed within 5 business days, contract review within 10, vendor and insurance follow-through within 20, and the legal hold is reviewed monthly and released only in writing by the General Counsel [5].\n\n**Engineering side:** the passages state that detection, severity assignment, mitigation, the Incident Commander model, and the postmortem live in incident-response.md, which is not provided here; the only engineering detail given is that the IC pages Legal and runs the incident [6][1], and that the blameless postmortem is due within 5 business days for SEV1/SEV2 [5]. Beyond that, INSUFFICIENT_EVIDENCE on engineering obligations.",
+      "cited_documents": [
+        "legal/security-incident-legal-playbook.md"
+      ],
+      "citation_precision": 1.0,
+      "fact_coverage": 1.0,
+      "grounding_score": 0.5,
+      "confidence": "low",
+      "input_tokens": 3953,
+      "output_tokens": 709,
+      "cost_usd": 0.03749,
+      "latency_ms": 11398
+    },
+    {
+      "case_id": "perm-01",
+      "category": "permission_negative",
+      "question": "What are the salary bands and bonus targets for each level?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [],
+      "retrieved_documents": [
+        "hr/benefits.md",
+        "hr/remote-work-policy.md",
+        "hr/leave-policy.md",
+        "engineering/incident-response.md",
+        "finance/reimbursement.md",
+        "engineering/oncall-rotation.txt"
+      ],
+      "leaked": false,
+      "recall": {},
+      "precision": {},
+      "ndcg": {},
+      "reciprocal_rank": 0.0,
+      "answered": false,
+      "abstained": true,
+      "abstention_correct": true,
+      "answer": "I could not find enough information in the documents you have access to to answer this confidently.",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": 0.0,
+      "confidence": "low",
+      "input_tokens": 4477,
+      "output_tokens": 19,
+      "cost_usd": 0.02286,
+      "latency_ms": 1576
+    },
+    {
+      "case_id": "perm-02",
+      "category": "permission_negative",
+      "question": "How are performance ratings calibrated and normalised across teams?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [],
+      "retrieved_documents": [
+        "hr/remote-work-policy.md",
+        "engineering/incident-response.md",
+        "legal/data-retention.md",
+        "engineering/oncall-rotation.txt",
+        "legal/nda-guidelines.md"
+      ],
+      "leaked": false,
+      "recall": {},
+      "precision": {},
+      "ndcg": {},
+      "reciprocal_rank": 0.0,
+      "answered": false,
+      "abstained": true,
+      "abstention_correct": true,
+      "answer": "I could not find enough information in the documents you have access to to answer this confidently.",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": 0.0,
+      "confidence": "low",
+      "input_tokens": 4641,
+      "output_tokens": 19,
+      "cost_usd": 0.02368,
+      "latency_ms": 2471
+    },
+    {
+      "case_id": "perm-03",
+      "category": "permission_negative",
+      "question": "What are the purchase approval thresholds by role?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [],
+      "retrieved_documents": [
+        "finance/reimbursement.md",
+        "finance/customer-refund-policy.md",
+        "finance/expense-policy.md",
+        "engineering/incident-response.md",
+        "legal/data-retention.md",
+        "legal/nda-guidelines.md"
+      ],
+      "leaked": false,
+      "recall": {},
+      "precision": {},
+      "ndcg": {},
+      "reciprocal_rank": 0.0,
+      "answered": false,
+      "abstained": true,
+      "abstention_correct": true,
+      "answer": "I could not find enough information in the documents you have access to to answer this confidently.",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": 0.0,
+      "confidence": "low",
+      "input_tokens": 4464,
+      "output_tokens": 19,
+      "cost_usd": 0.022795,
+      "latency_ms": 3751
+    },
+    {
+      "case_id": "perm-04",
+      "category": "permission_negative",
+      "question": "How do we recognise subscription revenue under ASC 606?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [],
+      "retrieved_documents": [
+        "finance/customer-refund-policy.md",
+        "legal/data-retention.md",
+        "engineering/payment-service.md",
+        "finance/expense-policy.md",
+        "engineering/authentication.md",
+        "hr/benefits.md",
+        "finance/reimbursement.md"
+      ],
+      "leaked": false,
+      "recall": {},
+      "precision": {},
+      "ndcg": {},
+      "reciprocal_rank": 0.0,
+      "answered": false,
+      "abstained": true,
+      "abstention_correct": true,
+      "answer": "I could not find enough information in the documents you have access to to answer this confidently.",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": 0.0,
+      "confidence": "low",
+      "input_tokens": 4191,
+      "output_tokens": 19,
+      "cost_usd": 0.02143,
+      "latency_ms": 1993
+    },
+    {
+      "case_id": "perm-05",
+      "category": "permission_negative",
+      "question": "How does the payments service verify webhook signatures?",
+      "asked_by": "marcus.webb@northwind.example",
+      "expected_sources": [],
+      "retrieved_documents": [
+        "legal/data-retention.md",
+        "finance/customer-refund-policy.md",
+        "finance/reimbursement.md",
+        "legal/nda-guidelines.md"
+      ],
+      "leaked": false,
+      "recall": {},
+      "precision": {},
+      "ndcg": {},
+      "reciprocal_rank": 0.0,
+      "answered": false,
+      "abstained": true,
+      "abstention_correct": true,
+      "answer": "I could not find enough information in the documents you have access to to answer this confidently.",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": 0.0,
+      "confidence": "low",
+      "input_tokens": 4193,
+      "output_tokens": 19,
+      "cost_usd": 0.02144,
+      "latency_ms": 1991
+    },
+    {
+      "case_id": "perm-06",
+      "category": "permission_negative",
+      "question": "What is the attorney-client privilege procedure for incident investigation materials?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [],
+      "retrieved_documents": [
+        "engineering/incident-response.md",
+        "engineering/deployment-runbook.md",
+        "legal/nda-guidelines.md",
+        "finance/reimbursement.md"
+      ],
+      "leaked": false,
+      "recall": {},
+      "precision": {},
+      "ndcg": {},
+      "reciprocal_rank": 0.0,
+      "answered": false,
+      "abstained": true,
+      "abstention_correct": true,
+      "answer": "I could not find enough information in the documents you have access to to answer this confidently.",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": 0.0,
+      "confidence": "low",
+      "input_tokens": 4024,
+      "output_tokens": 19,
+      "cost_usd": 0.020595,
+      "latency_ms": 1987
+    },
+    {
+      "case_id": "unans-01",
+      "category": "unanswerable",
+      "question": "Do we accept cryptocurrency or stablecoin payments?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [],
+      "retrieved_documents": [
+        "engineering/payment-service.md",
+        "engineering/adr-0007-postgres-partitioning.md",
+        "engineering/authentication.md"
+      ],
+      "leaked": false,
+      "recall": {},
+      "precision": {},
+      "ndcg": {},
+      "reciprocal_rank": 0.0,
+      "answered": false,
+      "abstained": true,
+      "abstention_correct": true,
+      "answer": "I could not find enough information in the documents you have access to to answer this confidently.",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": 0.0,
+      "confidence": "low",
+      "input_tokens": 4453,
+      "output_tokens": 19,
+      "cost_usd": 0.02274,
+      "latency_ms": 1940
+    },
+    {
+      "case_id": "unans-02",
+      "category": "unanswerable",
+      "question": "What are the office hours for our Tokyo office?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [],
+      "retrieved_documents": [
+        "hr/remote-work-policy.md",
+        "engineering/oncall-rotation.txt",
+        "finance/expense-policy.md"
+      ],
+      "leaked": false,
+      "recall": {},
+      "precision": {},
+      "ndcg": {},
+      "reciprocal_rank": 0.0,
+      "answered": false,
+      "abstained": true,
+      "abstention_correct": true,
+      "answer": "I could not find enough information in the documents you have access to to answer this confidently.",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": 0.0,
+      "confidence": "low",
+      "input_tokens": 4416,
+      "output_tokens": 19,
+      "cost_usd": 0.022555,
+      "latency_ms": 2125
+    },
+    {
+      "case_id": "unans-03",
+      "category": "unanswerable",
+      "question": "What is our sabbatical policy after five years of service?",
+      "asked_by": "marcus.webb@northwind.example",
+      "expected_sources": [],
+      "retrieved_documents": [
+        "hr/leave-policy.md",
+        "legal/data-retention.md",
+        "hr/compensation-policy.md",
+        "hr/remote-work-policy.md"
+      ],
+      "leaked": false,
+      "recall": {},
+      "precision": {},
+      "ndcg": {},
+      "reciprocal_rank": 0.0,
+      "answered": false,
+      "abstained": true,
+      "abstention_correct": true,
+      "answer": "I could not find enough information in the documents you have access to to answer this confidently.",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": 0.0,
+      "confidence": "low",
+      "input_tokens": 4570,
+      "output_tokens": 19,
+      "cost_usd": 0.023325,
+      "latency_ms": 1643
+    },
+    {
+      "case_id": "unans-04",
+      "category": "unanswerable",
+      "question": "Does the company offer pet insurance as a benefit?",
+      "asked_by": "marcus.webb@northwind.example",
+      "expected_sources": [],
+      "retrieved_documents": [
+        "hr/benefits.md",
+        "hr/remote-work-policy.md",
+        "hr/compensation-policy.md"
+      ],
+      "leaked": false,
+      "recall": {},
+      "precision": {},
+      "ndcg": {},
+      "reciprocal_rank": 0.0,
+      "answered": false,
+      "abstained": true,
+      "abstention_correct": true,
+      "answer": "I could not find enough information in the documents you have access to to answer this confidently.",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": 0.0,
+      "confidence": "low",
+      "input_tokens": 3969,
+      "output_tokens": 19,
+      "cost_usd": 0.02032,
+      "latency_ms": 1840
+    },
+    {
+      "case_id": "unans-05",
+      "category": "unanswerable",
+      "question": "How much does our bug bounty program pay for a critical vulnerability?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [],
+      "retrieved_documents": [
+        "engineering/incident-response.md",
+        "engineering/oncall-rotation.txt",
+        "engineering/payment-service.md",
+        "finance/customer-refund-policy.md",
+        "hr/benefits.md",
+        "engineering/observability-standards.md",
+        "legal/nda-guidelines.md",
+        "finance/expense-policy.md"
+      ],
+      "leaked": false,
+      "recall": {},
+      "precision": {},
+      "ndcg": {},
+      "reciprocal_rank": 0.0,
+      "answered": false,
+      "abstained": true,
+      "abstention_correct": true,
+      "answer": "I could not find enough information in the documents you have access to to answer this confidently.",
+      "cited_documents": [],
+      "citation_precision": null,
+      "fact_coverage": null,
+      "grounding_score": 0.0,
+      "confidence": "low",
+      "input_tokens": 4210,
+      "output_tokens": 19,
+      "cost_usd": 0.021525,
+      "latency_ms": 3168
+    }
+  ]
+}

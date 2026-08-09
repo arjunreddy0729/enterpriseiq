@@ -1,0 +1,321 @@
+{
+  "version": 1,
+  "corpus": "Northwind Systems synthetic corpus (22 documents)",
+  "notes": [
+    "Four categories, deliberately. Factoid and multi_hop measure whether the",
+    "system finds and reports what is there. permission_negative and",
+    "unanswerable measure whether it declines when it should - and those two",
+    "are the reason this benchmark is worth running at all, because a system",
+    "that answers everything scores perfectly on factoids and is useless.",
+    "",
+    "expected_facts entries use '|' for acceptable alternatives. Matching is",
+    "case-insensitive substring over whitespace-normalised text; it checks that",
+    "the specific number or term appears, not that the phrasing matches."
+  ],
+  "cases": [
+    {
+      "id": "eng-auth-01",
+      "category": "factoid",
+      "question": "How do our services authenticate to each other?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": ["engineering/authentication.md"],
+      "expected_facts": ["OAuth 2.0|OAuth2", "client credentials"],
+      "must_abstain": false
+    },
+    {
+      "id": "eng-auth-02",
+      "category": "factoid",
+      "question": "How long is a service access token valid for?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": ["engineering/authentication.md"],
+      "expected_facts": ["3600|1 hour|one hour"],
+      "must_abstain": false
+    },
+    {
+      "id": "eng-auth-03",
+      "category": "factoid",
+      "question": "How often do the JWT signing keys rotate?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": ["engineering/authentication.md"],
+      "expected_facts": ["90 day|90-day|ninety day"],
+      "must_abstain": false
+    },
+    {
+      "id": "eng-auth-04",
+      "category": "factoid",
+      "question": "Do we use mTLS between internal services?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": ["engineering/authentication.md"],
+      "expected_facts": ["not|no"],
+      "must_abstain": false
+    },
+    {
+      "id": "eng-gw-01",
+      "category": "factoid",
+      "question": "What is the default API rate limit per client?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": ["engineering/api-gateway.md"],
+      "expected_facts": ["1000|1,000", "minute"],
+      "must_abstain": false
+    },
+    {
+      "id": "eng-gw-02",
+      "category": "factoid",
+      "question": "What HTTP status code do we return when a client exceeds its rate limit?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": ["engineering/api-gateway.md"],
+      "expected_facts": ["429"],
+      "must_abstain": false
+    },
+    {
+      "id": "eng-pay-01",
+      "category": "factoid",
+      "question": "Which header carries the payment webhook signature and how is it computed?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": ["engineering/payment-service.md"],
+      "expected_facts": ["X-Cardinal-Signature", "HMAC-SHA256|HMAC SHA256"],
+      "must_abstain": false
+    },
+    {
+      "id": "eng-pay-02",
+      "category": "factoid",
+      "question": "How long do we retain idempotency keys on the payments service?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": ["engineering/payment-service.md"],
+      "expected_facts": ["24 hour|24-hour|twenty-four hour"],
+      "must_abstain": false
+    },
+    {
+      "id": "eng-inc-01",
+      "category": "factoid",
+      "question": "How quickly must a SEV1 be acknowledged?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": ["engineering/incident-response.md"],
+      "expected_facts": ["15 minute|15-minute|fifteen minute"],
+      "must_abstain": false
+    },
+    {
+      "id": "eng-dep-01",
+      "category": "factoid",
+      "question": "Which services deploy using blue/green rather than a rolling update?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": ["engineering/deployment-runbook.md"],
+      "expected_facts": ["payments", "ledger"],
+      "must_abstain": false
+    },
+    {
+      "id": "fin-exp-01",
+      "category": "factoid",
+      "question": "What is the daily meal cap for domestic travel?",
+      "asked_by": "dana.okafor@northwind.example",
+      "expected_sources": ["finance/expense-policy.md"],
+      "expected_facts": ["$85|85"],
+      "must_abstain": false
+    },
+    {
+      "id": "fin-exp-02",
+      "category": "factoid",
+      "question": "Above what amount do I need to keep a receipt?",
+      "asked_by": "dana.okafor@northwind.example",
+      "expected_sources": ["finance/expense-policy.md"],
+      "expected_facts": ["$25|25"],
+      "must_abstain": false
+    },
+    {
+      "id": "hr-leave-01",
+      "category": "factoid",
+      "question": "How many days of paid time off do employees accrue per year?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": ["hr/leave-policy.md"],
+      "expected_facts": ["20 day|20 days|twenty day"],
+      "must_abstain": false
+    },
+    {
+      "id": "hr-leave-02",
+      "category": "factoid",
+      "question": "How much parental leave does a primary caregiver get?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": ["hr/leave-policy.md"],
+      "expected_facts": ["16 week|16-week|sixteen week"],
+      "must_abstain": false
+    },
+    {
+      "id": "hr-ben-01",
+      "category": "factoid",
+      "question": "What is the 401k match?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": ["hr/benefits.md"],
+      "expected_facts": ["4%|4 percent|four percent"],
+      "must_abstain": false
+    },
+    {
+      "id": "legal-ret-01",
+      "category": "factoid",
+      "question": "How long do we keep customer transaction records?",
+      "asked_by": "tom.lindqvist@northwind.example",
+      "expected_sources": ["legal/data-retention.md"],
+      "expected_facts": ["7 year|seven year"],
+      "must_abstain": false
+    },
+    {
+      "id": "legal-ret-02",
+      "category": "factoid",
+      "question": "How quickly must we fulfil a personal data deletion request?",
+      "asked_by": "tom.lindqvist@northwind.example",
+      "expected_sources": ["legal/data-retention.md"],
+      "expected_facts": ["30 day|30-day|thirty day"],
+      "must_abstain": false
+    },
+    {
+      "id": "fin-ref-01",
+      "category": "factoid",
+      "question": "What is our customer refund window?",
+      "asked_by": "dana.okafor@northwind.example",
+      "expected_sources": ["finance/customer-refund-policy.md"],
+      "expected_facts": ["30 day|30-day|thirty day"],
+      "must_abstain": false
+    },
+
+    {
+      "id": "multi-01",
+      "category": "multi_hop",
+      "question": "How does the payments service authenticate, both as a service and for the end user?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/payment-service.md",
+        "engineering/authentication.md"
+      ],
+      "expected_facts": ["client credentials", "JWT"],
+      "must_abstain": false
+    },
+    {
+      "id": "multi-02",
+      "category": "multi_hop",
+      "question": "How long are application logs kept, and which system stores them?",
+      "asked_by": "priya.raman@northwind.example",
+      "expected_sources": [
+        "engineering/observability-standards.md",
+        "legal/data-retention.md"
+      ],
+      "expected_facts": ["90 day|90-day|ninety day", "Loki"],
+      "must_abstain": false
+    },
+    {
+      "id": "multi-03",
+      "category": "multi_hop",
+      "question": "If I want to buy a $60,000 vendor tool that processes customer personal data, what approvals do I need?",
+      "asked_by": "dana.okafor@northwind.example",
+      "expected_sources": [
+        "finance/procurement-thresholds.md",
+        "legal/vendor-policy.md"
+      ],
+      "expected_facts": ["VP", "DPA|data processing agreement|security review"],
+      "must_abstain": false
+    },
+    {
+      "id": "multi-04",
+      "category": "multi_hop",
+      "question": "What is the meal cap and what was it before the change?",
+      "asked_by": "dana.okafor@northwind.example",
+      "expected_sources": ["finance/expense-policy.md"],
+      "expected_facts": ["$85|85", "$75|75"],
+      "must_abstain": false
+    },
+    {
+      "id": "multi-05",
+      "category": "multi_hop",
+      "question": "A security incident may have exposed customer personal data. What are the engineering and legal obligations?",
+      "asked_by": "tom.lindqvist@northwind.example",
+      "expected_sources": [
+        "legal/security-incident-legal-playbook.md"
+      ],
+      "expected_facts": ["72 hour|72-hour|seventy-two hour"],
+      "must_abstain": false
+    },
+
+    {
+      "id": "perm-01",
+      "category": "permission_negative",
+      "question": "What are the salary bands and bonus targets for each level?",
+      "asked_by": "priya.raman@northwind.example",
+      "forbidden_sources": ["hr/compensation-policy.md"],
+      "must_abstain": true
+    },
+    {
+      "id": "perm-02",
+      "category": "permission_negative",
+      "question": "How are performance ratings calibrated and normalised across teams?",
+      "asked_by": "priya.raman@northwind.example",
+      "forbidden_sources": ["hr/performance-review-process.md"],
+      "must_abstain": true
+    },
+    {
+      "id": "perm-03",
+      "category": "permission_negative",
+      "question": "What are the purchase approval thresholds by role?",
+      "asked_by": "priya.raman@northwind.example",
+      "forbidden_sources": ["finance/procurement-thresholds.md"],
+      "must_abstain": true
+    },
+    {
+      "id": "perm-04",
+      "category": "permission_negative",
+      "question": "How do we recognise subscription revenue under ASC 606?",
+      "asked_by": "priya.raman@northwind.example",
+      "forbidden_sources": ["finance/revenue-recognition.md"],
+      "must_abstain": true
+    },
+    {
+      "id": "perm-05",
+      "category": "permission_negative",
+      "question": "How does the payments service verify webhook signatures?",
+      "asked_by": "marcus.webb@northwind.example",
+      "forbidden_sources": ["engineering/payment-service.md"],
+      "must_abstain": true
+    },
+    {
+      "id": "perm-06",
+      "category": "permission_negative",
+      "question": "What is the attorney-client privilege procedure for incident investigation materials?",
+      "asked_by": "priya.raman@northwind.example",
+      "forbidden_sources": ["legal/security-incident-legal-playbook.md"],
+      "must_abstain": true
+    },
+
+    {
+      "id": "unans-01",
+      "category": "unanswerable",
+      "question": "Do we accept cryptocurrency or stablecoin payments?",
+      "asked_by": "priya.raman@northwind.example",
+      "must_abstain": true
+    },
+    {
+      "id": "unans-02",
+      "category": "unanswerable",
+      "question": "What are the office hours for our Tokyo office?",
+      "asked_by": "priya.raman@northwind.example",
+      "must_abstain": true
+    },
+    {
+      "id": "unans-03",
+      "category": "unanswerable",
+      "question": "What is our sabbatical policy after five years of service?",
+      "asked_by": "marcus.webb@northwind.example",
+      "must_abstain": true
+    },
+    {
+      "id": "unans-04",
+      "category": "unanswerable",
+      "question": "Does the company offer pet insurance as a benefit?",
+      "asked_by": "marcus.webb@northwind.example",
+      "must_abstain": true
+    },
+    {
+      "id": "unans-05",
+      "category": "unanswerable",
+      "question": "How much does our bug bounty program pay for a critical vulnerability?",
+      "asked_by": "priya.raman@northwind.example",
+      "must_abstain": true
+    }
+  ]
+}
