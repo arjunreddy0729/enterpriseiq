@@ -53,6 +53,7 @@ def candidate_columns() -> Select[Any]:
         Chunk.page_from,
         Chunk.page_to,
         Chunk.source_updated_at,
+        Chunk.access_group_ids,
         Document.title.label("document_title"),
         Document.source_uri,
     ).join(Document, Document.id == Chunk.document_id)
@@ -83,6 +84,7 @@ def row_to_candidate(row: Any) -> Candidate:
         page_from=row.page_from,
         page_to=row.page_to,
         source_updated_at=row.source_updated_at,
+        access_group_ids=tuple(row.access_group_ids or ()),
     )
 
 
@@ -104,9 +106,7 @@ class VectorRetriever:
         vector = self._embedder.embed_query(query.text)
         return self.search_with_vector(query, vector)
 
-    def search_with_vector(
-        self, query: RetrievalQuery, vector: np.ndarray
-    ) -> list[Candidate]:
+    def search_with_vector(self, query: RetrievalQuery, vector: np.ndarray) -> list[Candidate]:
         """Search with a pre-computed query vector.
 
         Split out so a caller embedding several query variants (V2 query
@@ -148,6 +148,4 @@ class VectorRetriever:
         """
         self._session.execute(text("SET LOCAL hnsw.iterative_scan = relaxed_order"))
         self._session.execute(text(f"SET LOCAL hnsw.ef_search = {_HNSW_EF_SEARCH}"))
-        self._session.execute(
-            text(f"SET LOCAL hnsw.max_scan_tuples = {_HNSW_MAX_SCAN_TUPLES}")
-        )
+        self._session.execute(text(f"SET LOCAL hnsw.max_scan_tuples = {_HNSW_MAX_SCAN_TUPLES}"))

@@ -1,8 +1,8 @@
 """Who is asking, and what may they read.
 
-Authentication here is a development header: `X-Dev-User: priya.raman@...`.
-That is deliberately the least interesting part of the system and it is meant
-to be replaced - a JWT bearer token in V2 changes only `resolve_identity`.
+Authentication is a password exchanged for a short-lived JWT (see
+app/core/security.py). Local development also accepts `X-Dev-User: <email>`,
+which production refuses to start with.
 
 Authorisation is the part that matters, and it is real. The groups resolved
 here flow into every RetrievalQuery and end up as a SQL predicate. Swapping
@@ -66,12 +66,27 @@ def resolve_identity(session: Session, email: str) -> Identity:
     if not normalised:
         raise IdentityError("no identity supplied")
 
-    user = session.execute(
-        select(User).where(User.email == normalised)
-    ).scalar_one_or_none()
+    user = session.execute(select(User).where(User.email == normalised)).scalar_one_or_none()
     if user is None:
         raise IdentityError(f"unknown user: {normalised}")
+    return identity_for(session, user)
 
+
+def resolve_identity_by_id(session: Session, user_id: uuid.UUID) -> Identity:
+    """Resolve the subject of a verified token.
+
+    Groups are read here, at request time, not from the token. A user removed
+    from a group loses that group's documents on their next request even while
+    holding a token issued before the change.
+    """
+    user = session.get(User, user_id)
+    if user is None:
+        raise IdentityError("token subject no longer exists")
+    return identity_for(session, user)
+
+
+def identity_for(session: Session, user: User) -> Identity:
+    """Build an Identity with the user's current groups."""
     rows = session.execute(
         select(Group.id, Group.name)
         .join(UserGroup, UserGroup.group_id == Group.id)

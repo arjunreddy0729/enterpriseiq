@@ -30,8 +30,11 @@ from typing import Any
 
 from sqlalchemy import ColumnElement, and_, false, or_
 
+from app.core.logging import get_logger
 from app.db.models import Chunk
-from app.retrieval.types import RetrievalQuery
+from app.retrieval.types import Candidate, RetrievalQuery
+
+logger = get_logger(__name__)
 
 
 def access_predicate(query: RetrievalQuery) -> ColumnElement[bool]:
@@ -44,6 +47,34 @@ def access_predicate(query: RetrievalQuery) -> ColumnElement[bool]:
         return false()
     # .overlap() renders the && operator, which uses the GIN index.
     return Chunk.access_group_ids.overlap(list(query.allowed_group_ids))
+
+
+def enforce_access(
+    candidates: list[Candidate], allowed_group_ids: tuple[int, ...]
+) -> list[Candidate]:
+    """Second, independent check, in application code, after retrieval.
+
+    The SQL predicate above is the real enforcement and this should never
+    remove anything. It exists for the day it does: a new retriever that
+    forgets build_where(), a raw-SQL debugging path, a refactor of fusion.
+    One bug in the query must not become a data breach, so anything that
+    fails here is dropped before it can reach a prompt or a response, and
+    logged at ERROR because it means the primary control has failed.
+    """
+    allowed = set(allowed_group_ids)
+    permitted: list[Candidate] = []
+    for candidate in candidates:
+        if allowed.intersection(candidate.access_group_ids):
+            permitted.append(candidate)
+        else:
+            logger.error(
+                "acl_violation_blocked",
+                chunk_id=str(candidate.chunk_id),
+                source_uri=candidate.source_uri,
+                chunk_groups=list(candidate.access_group_ids),
+                caller_groups=sorted(allowed),
+            )
+    return permitted
 
 
 def metadata_predicates(query: RetrievalQuery) -> list[ColumnElement[bool]]:
@@ -91,4 +122,11 @@ def describe(query: RetrievalQuery) -> dict[str, Any]:
     }
 
 
-__all__ = ["access_predicate", "build_where", "describe", "metadata_predicates", "or_"]
+__all__ = [
+    "access_predicate",
+    "build_where",
+    "describe",
+    "enforce_access",
+    "metadata_predicates",
+    "or_",
+]

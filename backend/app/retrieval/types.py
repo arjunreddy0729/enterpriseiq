@@ -103,6 +103,9 @@ class Candidate:
     page_from: int | None = None
     page_to: int | None = None
     source_updated_at: dt.datetime | None = None
+    #: The chunk's ACL as stored, carried out of the database so the
+    #: application can re-check it (see filters.enforce_access).
+    access_group_ids: tuple[int, ...] = ()
 
     #: Raw score from whichever retriever produced this row.
     keyword_score: float | None = None

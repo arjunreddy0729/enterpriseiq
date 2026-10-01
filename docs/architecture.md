@@ -59,24 +59,36 @@ predicate instead of guessing, and the backfill is resumable.
 
 `document_permissions` is the source of truth; `chunks.access_group_ids` is a
 denormalised projection of it, which is what makes the retrieval-time ACL check
-a single indexable predicate. Any change to `document_permissions` must be
-propagated:
+a single indexable predicate. The two must never disagree.
 
-```sql
-UPDATE chunks c
-SET access_group_ids = (
-    SELECT coalesce(array_agg(dp.group_id), '{}')
-    FROM document_permissions dp
-    WHERE dp.document_id = c.document_id
-)
-WHERE c.document_id = :document_id;
+**Use the admin API, not SQL.**
+
+```bash
+PUT /api/v1/admin/documents/{document_id}/permissions   {"groups": ["hr"]}
+PUT /api/v1/admin/users/{user_id}/groups                 {"groups": ["engineering"]}
 ```
 
-**Revocations propagate synchronously, grants asynchronously.** A lag on a
-grant means someone briefly cannot see a document they are entitled to. A lag
-on a revocation means someone can still retrieve a document they have just
-lost access to — that is a security incident, not an inconvenience, so it runs
-inside the same transaction as the `document_permissions` delete.
+`PermissionService.set_document_groups` rewrites `document_permissions`, the
+chunk copies and the `permission_changes` audit row in **one transaction**.
+Grants and revocations are both synchronous: there is no window in which the
+permission table says "revoked" while the chunks still say "allowed", which is
+the window a background propagation job would open. On this corpus a document
+has at most a few dozen chunks, so the `UPDATE` is cheap; at millions of chunks
+per document this would become a batched job, and revocations would then need
+a denylist checked at query time to keep them immediate.
+
+User group changes need no propagation at all. Tokens carry only a user id;
+groups are read from `user_groups` on every request, so removing someone from
+HR applies to their next request even with an unexpired token.
+
+**Re-ingesting resets ACLs to the manifest.** `scripts.ingest_corpus` treats
+`corpus/manifest.yaml` as the declarative definition of the demo corpus,
+including its permissions. A change made through the API lasts until the next
+re-ingest.
+
+**The history is append-only.** A trigger on `permission_changes` rejects
+`UPDATE` and `DELETE`, so the record of who changed what cannot be rewritten by
+the application, including by a bug in it.
 
 ---
 

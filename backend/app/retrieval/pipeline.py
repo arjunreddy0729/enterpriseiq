@@ -7,8 +7,9 @@
       +--> vector search  (top 50) --+
 
 Both retrievers run against the same access predicate, so the fused set can
-only contain chunks the caller was already entitled to read. There is no
-filtering step after this point, because there is nothing left to filter.
+only contain chunks the caller was already entitled to read. The fused set is
+then re-checked in application code (filters.enforce_access) as a second,
+independent control; in normal operation it removes nothing.
 
 The candidate counts are deliberate. Cheap retrievers cast a wide net to buy
 *recall*; the expensive cross-encoder that arrives in V2 narrows it to buy
@@ -27,6 +28,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.logging import get_logger
+from app.retrieval.filters import enforce_access
 from app.retrieval.fusion import reciprocal_rank_fusion
 from app.retrieval.keyword import KeywordRetriever
 from app.retrieval.ports import Embedder, Reranker
@@ -112,6 +114,10 @@ class HybridRetrievalPipeline:
             limit=settings.retrieval_fusion_top_k,
         )
         timings["fusion_ms"] = _elapsed(started)
+
+        # Defense in depth: re-verify every ACL before anything leaves this
+        # function. Both retrievers already filtered in SQL.
+        fused = enforce_access(fused, allowed_group_ids)
 
         result = RetrievalResult(
             candidates=fused,

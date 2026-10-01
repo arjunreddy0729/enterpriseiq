@@ -55,15 +55,33 @@ jobs:
       POSTGRES_USER: enterpriseiq
       POSTGRES_PASSWORD: enterpriseiq
       POSTGRES_DB: enterpriseiq
+      # Test-only values for an ephemeral database. Not secrets.
+      JWT_SECRET: ci-only-signing-key-for-an-ephemeral-database-0123456789
+      DEMO_USER_PASSWORD: northwind-demo
+      # Fail, rather than skip, if the database or corpus is missing. Before
+      # this, every permission test was silently skipped in CI because the
+      # corpus was never ingested.
+      REQUIRE_INTEGRATION: "1"
+      HF_HOME: ${{ github.workspace }}/.hf-cache
       # No ANTHROPIC_API_KEY in CI. Everything except generation must work
-      # without one, and that is worth enforcing.
+      # without one, and that is worth enforcing. The leak suite checks the
+      # generation path with a scripted stub model, so CI costs nothing.
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
-      - run: pip install -e ".[dev]"
+
+      # CPU-only torch first: the default Linux wheel pulls ~3.5GB of CUDA.
+      - run: pip install --index-url https://download.pytorch.org/whl/cpu torch
+      - run: pip install -e ".[ml,dev]"
+
+      # The embedding model (~440MB) is downloaded once and cached.
+      - uses: actions/cache@v4
+        with:
+          path: .hf-cache
+          key: hf-${{ hashFiles('backend/app/core/config.py') }}
 
       - name: Apply migrations
         run: alembic upgrade head
@@ -76,7 +94,10 @@ jobs:
       - name: Seed identities
         run: python -m scripts.seed_users
 
-      - name: Run tests
+      - name: Ingest the demo corpus
+        run: python -m scripts.ingest_corpus
+
+      - name: Run tests (including the adversarial leak suite)
         run: pytest --cov=app --cov-report=term-missing
 
   docker:

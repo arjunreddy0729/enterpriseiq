@@ -15,7 +15,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.errors import register_exception_handlers
-from app.api.routes import health, query, search
+from app.api.routes import admin, auth, health, query, search
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging, get_logger, request_id_var
 
@@ -63,7 +63,9 @@ def create_app() -> FastAPI:
         description=(
             "Permission-aware enterprise RAG platform. "
             "Hybrid retrieval (BM25 + dense vectors) with reciprocal rank fusion, "
-            "ACL enforcement inside the retrieval query, and citation-grounded generation."
+            "ACL enforcement inside the retrieval query, and citation-grounded generation. "
+            "Authenticate with POST /api/v1/auth/token; admins manage ACLs and read the "
+            "audit trail under /api/v1/admin."
         ),
         lifespan=lifespan,
         docs_url="/docs",
@@ -114,6 +116,8 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(search.router, prefix=settings.api_v1_prefix)
     app.include_router(query.router, prefix=settings.api_v1_prefix)
+    app.include_router(auth.router, prefix=settings.api_v1_prefix)
+    app.include_router(admin.router, prefix=settings.api_v1_prefix)
 
     return app
 

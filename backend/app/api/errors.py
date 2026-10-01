@@ -61,6 +61,14 @@ class PermissionDeniedError(AppError):
     code = "permission_denied"
 
 
+class InvalidRequestError(AppError):
+    """The request is well-formed but asks for something that is not allowed,
+    such as a document readable by no group."""
+
+    status_code = status.HTTP_400_BAD_REQUEST
+    code = "invalid_request"
+
+
 class ConfigurationError(AppError):
     """A required piece of configuration is missing or invalid.
 
@@ -72,7 +80,11 @@ class ConfigurationError(AppError):
 
 
 def _envelope(
-    status_code: int, code: str, message: str, details: Any | None = None
+    status_code: int,
+    code: str,
+    message: str,
+    details: Any | None = None,
+    headers: dict[str, str] | None = None,
 ) -> JSONResponse:
     payload = ErrorResponse(
         error=ErrorDetail(
@@ -82,7 +94,9 @@ def _envelope(
             details=details,
         )
     )
-    return JSONResponse(status_code=status_code, content=payload.model_dump(mode="json"))
+    return JSONResponse(
+        status_code=status_code, content=payload.model_dump(mode="json"), headers=headers
+    )
 
 
 def register_exception_handlers(app: FastAPI) -> None:
@@ -106,7 +120,11 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def _handle_http_exception(
         _request: Request, exc: StarletteHTTPException
     ) -> JSONResponse:
-        return _envelope(exc.status_code, "http_error", str(exc.detail))
+        # Headers carry protocol meaning (WWW-Authenticate on a 401), so they
+        # survive the switch to the error envelope.
+        return _envelope(
+            exc.status_code, "http_error", str(exc.detail), headers=getattr(exc, "headers", None)
+        )
 
     @app.exception_handler(Exception)
     async def _handle_unexpected(_request: Request, exc: Exception) -> JSONResponse:

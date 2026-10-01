@@ -26,7 +26,6 @@ from app.db.models import QueryLog
 from app.retrieval.filters import describe
 from app.retrieval.keyword import KeywordRetriever
 from app.retrieval.pipeline import HybridRetrievalPipeline
-from app.retrieval.ports import Embedder
 from app.retrieval.types import Filters, RetrievalQuery
 from app.schemas.search import (
     IdentitySummary,
@@ -62,9 +61,7 @@ def search(
     # so it must always be present.
     request_id = request_id_var.get() or request.headers.get("X-Request-ID", "")
 
-    filters: Filters = (
-        payload.filters.to_domain() if payload.filters is not None else Filters()
-    )
+    filters: Filters = payload.filters.to_domain() if payload.filters is not None else Filters()
 
     pipeline = HybridRetrievalPipeline(session, embedder)
     result = pipeline.retrieve(
@@ -140,6 +137,7 @@ def _log_search(
                 ),
                 candidates=[c.to_log_entry() for c in candidates],
                 used_chunk_ids=[c.chunk_id for c in candidates],
+                retrieved_document_ids=list(dict.fromkeys(c.document_id for c in candidates)),
                 latency_ms={**getattr(result, "timings_ms", {}), "total": took_ms},
                 status="retrieval_only",
             )

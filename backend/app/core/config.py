@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Literal
 from urllib.parse import quote_plus
 
-from pydantic import Field, SecretStr, field_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # backend/app/core/config.py -> parents[2] == backend/
@@ -66,6 +66,20 @@ class Settings(BaseSettings):
     log_format: Literal["console", "json"] = "console"
     api_v1_prefix: str = "/api/v1"
     cors_allow_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
+
+    # --- Authentication ----------------------------------------------------
+    #: HMAC key for signing access tokens. Required to issue or accept a JWT;
+    #: generate one with `python -c "import secrets; print(secrets.token_urlsafe(48))"`.
+    jwt_secret: SecretStr | None = None
+    jwt_issuer: str = "enterpriseiq"
+    jwt_audience: str = "enterpriseiq-api"
+    access_token_ttl_minutes: int = Field(default=60, ge=1, le=24 * 60)
+    #: Accept `X-Dev-User: <email>` with no password. Convenient for curl and
+    #: the existing tests; refused outright in production (see the validator).
+    auth_dev_header_enabled: bool = True
+    #: Password given to every seeded demo user. Unset means seeded users have
+    #: no password and can only be used through the dev header.
+    demo_user_password: SecretStr | None = None
 
     # --- PostgreSQL --------------------------------------------------------
     postgres_host: str = "localhost"
@@ -146,6 +160,19 @@ class Settings(BaseSettings):
         # lose. Guarantee exactly one trailing space if a prefix is set at all.
         value = value.rstrip()
         return f"{value} " if value else ""
+
+    @model_validator(mode="after")
+    def _production_auth_is_real(self) -> Settings:
+        """Fail at startup, not at the first request, if production would be
+        running with password-less or forgeable authentication."""
+        if self.environment != "production":
+            return self
+        if self.auth_dev_header_enabled:
+            raise ValueError("AUTH_DEV_HEADER_ENABLED must be false in production")
+        secret = self.jwt_secret.get_secret_value() if self.jwt_secret else ""
+        if len(secret) < 32:
+            raise ValueError("JWT_SECRET must be set to at least 32 characters in production")
+        return self
 
     # --- Derived values ----------------------------------------------------
     @property

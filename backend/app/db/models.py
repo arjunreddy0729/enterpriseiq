@@ -44,6 +44,7 @@ from sqlalchemy import (
     func,
     text,
 )
+
 # The PostgreSQL ARRAY, not sqlalchemy.ARRAY. Only the dialect-specific type
 # exposes the containment comparators, and `.overlap()` renders the `&&`
 # operator that the entire access-control predicate is built on. With the
@@ -88,9 +89,8 @@ class Group(Base):
 
 
 class User(Base):
-    """An employee. Authentication is a dev-identity header for the MVP; the
-    authorisation model (groups) is the real thing and does not change when
-    JWT auth lands in V2."""
+    """An employee. Authenticates with a password for a short-lived JWT; what
+    they may read is decided by their groups, resolved on every request."""
 
     __tablename__ = "users"
 
@@ -100,6 +100,8 @@ class User(Base):
     role: Mapped[str] = mapped_column(String(32), nullable=False, server_default="employee")
     department: Mapped[str | None] = mapped_column(String(64))
     title: Mapped[str | None] = mapped_column(String(128))
+    #: scrypt hash (see app/core/security.py). NULL means no password login.
+    password_hash: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[dt.datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -320,6 +322,12 @@ class QueryLog(Base):
     # [{chunk_id, keyword_rank, vector_rank, rrf_score, rerank_score}, ...]
     candidates: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
     used_chunk_ids: Mapped[list[uuid.UUID] | None] = mapped_column(ARRAY(UUID(as_uuid=True)))
+    #: Every document whose text left the database for this request, whether
+    #: or not it was cited. GIN-indexed so "who retrieved document X?" is an
+    #: index lookup rather than a scan over JSONB.
+    retrieved_document_ids: Mapped[list[uuid.UUID]] = mapped_column(
+        ARRAY(UUID(as_uuid=True)), nullable=False, server_default=text("'{}'::uuid[]")
+    )
 
     answer: Mapped[str | None] = mapped_column(Text)
     citations: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
@@ -352,4 +360,42 @@ class QueryLog(Base):
         Index("ix_query_logs_created_at", "created_at"),
         Index("ix_query_logs_request_id", "request_id"),
         Index("ix_query_logs_user_id", "user_id"),
+        Index(
+            "ix_query_logs_retrieved_document_ids",
+            "retrieved_document_ids",
+            postgresql_using="gin",
+        ),
+    )
+
+
+class PermissionChange(Base):
+    """Append-only record of every ACL and group-membership change.
+
+    A database trigger (migration 0002) rejects UPDATE and DELETE on this
+    table, so the history cannot be rewritten by the application, including
+    by a bug in it. Actor and target are stored as text rather than foreign
+    keys for the same reason: deleting a user must not need to edit the record
+    of what that user did.
+    """
+
+    __tablename__ = "permission_changes"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    actor_email: Mapped[str] = mapped_column(String(255), nullable=False)
+    action: Mapped[str] = mapped_column(String(32), nullable=False)
+    target_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    target_label: Mapped[str] = mapped_column(Text, nullable=False)
+    before: Mapped[list[str]] = mapped_column(JSONB, nullable=False)
+    after: Mapped[list[str]] = mapped_column(JSONB, nullable=False)
+    request_id: Mapped[str | None] = mapped_column(String(64))
+    created_at: Mapped[dt.datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "action IN ('document_acl', 'user_groups')", name="ck_permission_changes_action"
+        ),
+        Index("ix_permission_changes_created_at", "created_at"),
+        Index("ix_permission_changes_target", "target_id"),
     )

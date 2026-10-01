@@ -59,3 +59,8 @@ Thumbs.db
 
 # --- Docker ----------------------------------------------------------------
 docker-compose.override.yml
+
+# --- Local AI-assistant files (never committed) ----------------------------
+.claude/
+CLAUDE.md
+CLAUDE.local.md

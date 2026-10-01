@@ -124,7 +124,11 @@ class QueryService:
         bundle: ContextBundle = build_context(candidates)
         if bundle.is_empty:
             return self._abstain(
-                question, candidates, timings, started, reason="empty_context",
+                question,
+                candidates,
+                timings,
+                started,
+                reason="empty_context",
                 before_model=True,
             )
 
@@ -145,9 +149,7 @@ class QueryService:
 
         if completion.was_refused:
             logger.warning("llm_refused", category=completion.refusal_category)
-            outcome = self._abstain(
-                question, candidates, timings, started, reason="model_refusal"
-            )
+            outcome = self._abstain(question, candidates, timings, started, reason="model_refusal")
             outcome.usage = usage
             return outcome
 
@@ -168,15 +170,11 @@ class QueryService:
 
         # --- verify grounding -------------------------------------------------
         verify_started = time.perf_counter()
-        grounding: GroundingReport = verify(
-            citation_result.answer, bundle, self._embedder
-        )
+        grounding: GroundingReport = verify(citation_result.answer, bundle, self._embedder)
         timings["verify_ms"] = int((time.perf_counter() - verify_started) * 1000)
 
         # --- confidence -------------------------------------------------------
-        signals = confidence_module.compute_signals(
-            candidates, citation_result, grounding
-        )
+        signals = confidence_module.compute_signals(candidates, citation_result, grounding)
         band = confidence_module.assess(signals)
 
         timings["total_ms"] = int((time.perf_counter() - started) * 1000)
@@ -225,8 +223,7 @@ class QueryService:
             answer=INSUFFICIENT_MESSAGE,
             confidence="low",
             confidence_explanation=(
-                "No sufficiently relevant passages were found in the documents "
-                "you have access to."
+                "No sufficiently relevant passages were found in the documents you have access to."
                 if before_model
                 else "The retrieved passages did not contain the answer."
             ),
@@ -262,6 +259,11 @@ class QueryService:
                     ),
                     candidates=[c.to_log_entry() for c in outcome.candidates],
                     used_chunk_ids=[c.chunk_id for c in outcome.citations],
+                    # Everything retrieved, not only what was cited: an
+                    # uncited passage still reached the model's context.
+                    retrieved_document_ids=list(
+                        dict.fromkeys(c.document_id for c in outcome.candidates)
+                    ),
                     answer=outcome.answer,
                     citations=[
                         {

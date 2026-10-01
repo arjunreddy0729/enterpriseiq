@@ -28,6 +28,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger
+from app.core.security import hash_password, verify_password
 from app.db.models import Group, User, UserGroup
 from app.db.session import SessionLocal
 
@@ -129,7 +130,9 @@ def seed_groups(session: Session) -> dict[str, Group]:
     return existing
 
 
-def seed_users(session: Session, groups: dict[str, Group]) -> None:
+def seed_users(
+    session: Session, groups: dict[str, Group], demo_password: str | None = None
+) -> None:
     existing = {u.email: u for u in session.scalars(select(User)).all()}
 
     for spec in USERS:
@@ -150,6 +153,12 @@ def seed_users(session: Session, groups: dict[str, Group]) -> None:
             user.role = spec.role
             user.department = spec.department
             user.title = spec.title
+
+        # Re-hash only when the stored hash does not already match, so
+        # re-running the seed does not churn every row.
+        if demo_password and not verify_password(demo_password, user.password_hash):
+            user.password_hash = hash_password(demo_password)
+            logger.info("user_password_set", email=spec.email)
 
         desired_ids = {groups[name].id for name in spec.groups}
         current_ids = set(
@@ -173,7 +182,8 @@ def print_summary(session: Session) -> None:
     users = session.scalars(select(User).order_by(User.email)).all()
     width = max(len(u.email) for u in users)
     print()
-    print("Seeded identities (use the email as the X-Dev-User header):")
+    print("Seeded identities (log in with POST /api/v1/auth/token, or in local")
+    print("development send the email as the X-Dev-User header):")
     print("-" * (width + 46))
     for user in users:
         names = sorted(g.name for g in user.groups)
@@ -189,7 +199,8 @@ def main() -> int:
     with SessionLocal() as session:
         try:
             groups = seed_groups(session)
-            seed_users(session, groups)
+            password = settings.demo_user_password
+            seed_users(session, groups, password.get_secret_value() if password else None)
             session.commit()
         except Exception as exc:
             session.rollback()
