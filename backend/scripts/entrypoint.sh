@@ -24,6 +24,8 @@ dsn = (
     f"password={os.environ.get('POSTGRES_PASSWORD', 'enterpriseiq')} "
     f"dbname={os.environ.get('POSTGRES_DB', 'enterpriseiq')}"
 )
+if os.environ.get("POSTGRES_SSLMODE"):
+    dsn += f" sslmode={os.environ['POSTGRES_SSLMODE']}"
 
 deadline = time.monotonic() + 60
 attempt = 0
@@ -50,6 +52,15 @@ else
   echo "[entrypoint] SEED_ON_STARTUP=false, skipping seed"
 fi
 
+# A hosted deployment has no one to run ingestion by hand, and on a fresh
+# database the API would answer every question with "not enough information".
+# Ingestion is idempotent (unchanged documents are skipped by content hash),
+# so running it on every start costs a few seconds, not a re-embed.
+if [ "${INGEST_ON_STARTUP:-false}" = "true" ]; then
+  echo "[entrypoint] ingesting the corpus ..."
+  python -m scripts.ingest_corpus
+fi
+
 RELOAD=""
 if [ "${ENVIRONMENT:-local}" = "local" ]; then
   RELOAD="--reload"
@@ -58,6 +69,6 @@ fi
 echo "[entrypoint] starting uvicorn ..."
 exec uvicorn app.main:app \
   --host 0.0.0.0 \
-  --port 8000 \
+  --port "${PORT:-8000}" \
   --no-access-log \
   ${RELOAD}

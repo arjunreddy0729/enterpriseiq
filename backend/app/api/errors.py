@@ -69,6 +69,13 @@ class InvalidRequestError(AppError):
     code = "invalid_request"
 
 
+class BudgetExhaustedError(AppError):
+    """The public demo's daily model budget is spent. Retrieval still works."""
+
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    code = "daily_budget_exhausted"
+
+
 class ConfigurationError(AppError):
     """A required piece of configuration is missing or invalid.
 

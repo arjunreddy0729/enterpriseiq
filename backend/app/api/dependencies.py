@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastapi import Depends, Header, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from app.api.errors import PermissionDeniedError
@@ -31,7 +31,14 @@ from app.retrieval.ports import Embedder
 SessionDep = Annotated[Session, Depends(get_session)]
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 
-_bearer = HTTPBearer(auto_error=False, description="Access token from POST /api/v1/auth/token")
+# OAuth2's password flow is what gives /docs an Authorize dialog with email and
+# password fields, so a visitor never copies a token by hand. On the wire it is
+# still just `Authorization: Bearer <jwt>`, which is all this reads.
+_bearer = OAuth2PasswordBearer(
+    tokenUrl=f"{get_settings().api_v1_prefix}/auth/login",
+    auto_error=False,
+    description="Log in with a demo email as the username.",
+)
 
 
 def _unauthorised(detail: str) -> HTTPException:
@@ -45,7 +52,7 @@ def _unauthorised(detail: str) -> HTTPException:
 def current_identity(
     session: SessionDep,
     settings: SettingsDep,
-    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)] = None,
+    token: Annotated[str | None, Depends(_bearer)] = None,
     x_dev_user: Annotated[
         str | None,
         Header(
@@ -68,8 +75,8 @@ def current_identity(
     tells the truth about why.
     """
     try:
-        if credentials is not None:
-            user_id = decode_access_token(credentials.credentials, settings)
+        if token is not None:
+            user_id = decode_access_token(token, settings)
             return resolve_identity_by_id(session, user_id)
         if x_dev_user and settings.auth_dev_header_enabled:
             return resolve_identity(session, x_dev_user)
@@ -89,9 +96,24 @@ def admin_identity(identity: IdentityDep) -> Identity:
     return identity
 
 
+def writable_admin(
+    admin: Annotated[Identity, Depends(admin_identity)], settings: SettingsDep
+) -> Identity:
+    """Admin endpoints that change permissions. Off in the public demo, where
+    the admin login is shared and one visitor's change would be every
+    visitor's broken demo. Reading permissions and the audit trail stays on."""
+    if settings.demo_mode:
+        raise PermissionDeniedError(
+            "Changing permissions is disabled in the public demo, where everyone shares "
+            "the admin login. Run it locally (docker compose up) to try revocation."
+        )
+    return admin
+
+
 def embedder() -> Embedder:
     return get_embedder()
 
 
 AdminDep = Annotated[Identity, Depends(admin_identity)]
+WritableAdminDep = Annotated[Identity, Depends(writable_admin)]
 EmbedderDep = Annotated[Embedder, Depends(embedder)]

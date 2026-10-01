@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, status
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from app.api.dependencies import IdentityDep, SessionDep, SettingsDep
 from app.api.errors import ConfigurationError
+from app.core.config import Settings
 from app.core.logging import get_logger
+from app.core.rate_limit import login_limit
 from app.core.security import (
     DUMMY_PASSWORD_HASH,
     TokenError,
@@ -27,21 +33,43 @@ _BAD_CREDENTIALS = "Incorrect email or password."
 @router.post(
     "/token",
     response_model=TokenResponse,
-    summary="Log in with email and password",
+    summary="Log in with email and password (JSON)",
     responses={401: {"description": "Incorrect email or password"}},
+    dependencies=[Depends(login_limit)],
 )
 def issue_token(payload: LoginRequest, session: SessionDep, settings: SettingsDep) -> TokenResponse:
+    return _authenticate(session, settings, payload.email, payload.password)
+
+
+@router.post(
+    "/login",
+    response_model=TokenResponse,
+    summary="Log in with email and password (OAuth2 form, used by the Authorize button)",
+    responses={401: {"description": "Incorrect email or password"}},
+    dependencies=[Depends(login_limit)],
+)
+def oauth_login(
+    form: Annotated[OAuth2PasswordRequestForm, Depends()],
+    session: SessionDep,
+    settings: SettingsDep,
+) -> TokenResponse:
+    """The same login, in the form-encoded shape OAuth2's password flow uses.
+    This is what the Authorize dialog in /docs calls; `username` is the email."""
+    return _authenticate(session, settings, form.username, form.password)
+
+
+def _authenticate(session: Session, settings: Settings, email: str, password: str) -> TokenResponse:
     if settings.jwt_secret is None:
         raise ConfigurationError("JWT_SECRET is not configured, so tokens cannot be issued.")
 
-    email = payload.email.strip().lower()
+    email = email.strip().lower()
     user = session.execute(select(User).where(User.email == email)).scalar_one_or_none()
 
     # Verify against a dummy hash for unknown emails so both failures take the
     # same time, and return the same message for both, so neither the body nor
     # the latency reveals which emails have accounts.
     stored = user.password_hash if user is not None else None
-    valid = verify_password(payload.password, stored or DUMMY_PASSWORD_HASH)
+    valid = verify_password(password, stored or DUMMY_PASSWORD_HASH)
     if user is None or stored is None or not valid:
         logger.info("login_failed", email=email)
         raise HTTPException(

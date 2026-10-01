@@ -11,13 +11,14 @@ import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, Response
+from fastapi import Depends, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.errors import register_exception_handlers
-from app.api.routes import admin, auth, health, query, search
+from app.api.routes import admin, auth, demo, health, query, search
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging, get_logger, request_id_var
+from app.core.rate_limit import query_limit, search_limit
 
 logger = get_logger(__name__)
 
@@ -113,9 +114,19 @@ def create_app() -> FastAPI:
 
     register_exception_handlers(app)
 
+    if settings.demo_mode:
+        # Registered before health so it owns "/" (routes match in order).
+        app.include_router(demo.router)
     app.include_router(health.router)
-    app.include_router(search.router, prefix=settings.api_v1_prefix)
-    app.include_router(query.router, prefix=settings.api_v1_prefix)
+    # Rate limits are attached here rather than in each route module; they are
+    # deployment policy, and are no-ops unless the demo or RATE_LIMITS_ENABLED
+    # turns them on.
+    app.include_router(
+        search.router, prefix=settings.api_v1_prefix, dependencies=[Depends(search_limit)]
+    )
+    app.include_router(
+        query.router, prefix=settings.api_v1_prefix, dependencies=[Depends(query_limit)]
+    )
     app.include_router(auth.router, prefix=settings.api_v1_prefix)
     app.include_router(admin.router, prefix=settings.api_v1_prefix)
 

@@ -377,7 +377,7 @@ python -m scripts.compare_eval before.json after.json
 | Auth | PyJWT (HS256) + stdlib scrypt | no hosted identity provider; free and local |
 | Generation | Claude via the Anthropic SDK | the only paid component |
 | Migrations | Alembic | |
-| Tests | pytest — **708 passing**, incl. 300-case leak suite | |
+| Tests | pytest — **732 passing**, incl. 300-case leak suite | |
 
 **No LangChain or LlamaIndex.** Not dogma: hybrid retrieval, fusion, ACL
 enforcement, citation resolution and grounding *are* this project. Behind a
@@ -475,6 +475,15 @@ python -m scripts.show_chunks ../corpus/engineering/authentication.md
 > Ports are configurable in `.env` (`API_HOST_PORT`, `POSTGRES_HOST_PORT`) —
 > `docker compose up` fails rather than picking a free port if one is taken.
 
+### Deploying a public demo
+
+`DEMO_MODE=true` adds what an open URL needs: a daily Claude spend cap read
+from the request log, per-visitor rate limits, read-only admin endpoints,
+hidden visitor queries in the audit trail, and a landing page with demo
+logins. Pushing to `main` runs CI and, if it passes, redeploys a free Hugging
+Face Space backed by a free Neon Postgres. Setup and a local rehearsal of a
+first deploy are in [`docs/deploy.md`](docs/deploy.md).
+
 ### The demo corpus
 
 **Northwind Systems** is entirely fictional — 22 documents across engineering,
@@ -507,6 +516,8 @@ backend/app/
   generation/   llm context prompts citations grounding confidence
   evaluation/   dataset metrics runner report
   services/     query_service permission_service audit_service
+backend/app/web/  the demo landing page
+deploy/huggingface/  Space Dockerfile and README (assembled by deploy.yml)
 backend/tests/
   unit/         no database, no network
   integration/  live Postgres + ingested corpus (auth, revocation, audit, ...)

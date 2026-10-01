@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EnterpriseIQ Demo</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --text: #1d1d1b; --muted: #5f5f5a;
+    --line: #e3e2dc; --accent: #2f5bd3; --accent-text: #ffffff; --code: #f0efe9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141413; --panel: #1d1d1b; --text: #ecebe6; --muted: #a3a29b;
+      --line: #33332f; --accent: #7a9bff; --accent-text: #0e1220; --code: #262624;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 48px 16px 64px; }
+  h1 { font-size: 2rem; margin: 0 0 8px; letter-spacing: -0.01em; }
+  h2 { font-size: 1.1rem; margin: 36px 0 12px; }
+  p { margin: 0 0 12px; }
+  .lede { color: var(--muted); font-size: 1.05rem; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 24px 0 8px; }
+  .button {
+    display: inline-block; padding: 10px 18px; border-radius: 8px; text-decoration: none;
+    font-weight: 600; border: 1px solid var(--line); color: var(--text); background: var(--panel);
+  }
+  .button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; background: var(--panel);
+          border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line);
+           vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  th { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+  code { background: var(--code); padding: 2px 6px; border-radius: 4px;
+         font: 0.9em ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
+  ol { padding-left: 20px; margin: 0; }
+  li { margin-bottom: 10px; }
+  .note { background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+          padding: 14px 16px; color: var(--muted); font-size: 0.95rem; }
+  .table-wrap { overflow-x: auto; }
+</style>
+</head>
+<body>
+<main>
+  <h1>EnterpriseIQ</h1>
+  <p class="lede">A permission-aware RAG system. It answers questions from company
+    documents with a citation for every claim, declines when the documents don't
+    contain the answer, and never shows anyone a document they aren't allowed to read.</p>
+  <p class="lede">The company, "Northwind Systems", and all 22 of its documents are fictional.</p>
+
+  <div class="actions">
+    <a class="button primary" href="/docs">Try it in the API console</a>
+    <a class="button" href="$repo_url">Source code &amp; design notes</a>
+  </div>
+
+  <h2>Demo logins</h2>
+  <p>Every account uses the password <code>$password</code>.</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Who</th><th>Email (use as username)</th><th>Can read</th></tr>
+    <tr><td>Marcus, HR</td><td><code>marcus.webb@northwind.example</code></td><td>HR and company-wide documents</td></tr>
+    <tr><td>Priya, Engineering</td><td><code>priya.raman@northwind.example</code></td><td>Engineering and company-wide documents</td></tr>
+    <tr><td>Dana, Finance</td><td><code>dana.okafor@northwind.example</code></td><td>Finance and company-wide documents</td></tr>
+    <tr><td>Tom, Legal</td><td><code>tom.lindqvist@northwind.example</code></td><td>Legal and company-wide documents</td></tr>
+    <tr><td>Admin</td><td><code>admin@northwind.example</code></td><td>Everything, plus the audit trail (read-only here)</td></tr>
+  </table>
+  </div>
+
+  <h2>Try it in four steps</h2>
+  <ol>
+    <li>Open the <a href="/docs">API console</a>, click <strong>Authorize</strong>, and log in as
+      Marcus: his email as the username, the password above. Leave the client fields empty.</li>
+    <li>Open <strong>POST /api/v1/query</strong>, click <strong>Try it out</strong>, then
+      <strong>Execute</strong>. It asks "What are the bonus targets by level?" and answers with
+      a citation to the HR compensation policy.</li>
+    <li>Click <strong>Authorize</strong>, log out, and log in as Priya. Run the same question.
+      She is an engineer, so the HR policy is filtered out inside the database query and the
+      system declines without ever sending HR text to the model.</li>
+    <li>Log in as the admin and open <strong>GET /api/v1/admin/audit/documents/{document_id}</strong>
+      (ids come from <strong>GET /api/v1/admin/documents</strong>) to see who retrieved a document.</li>
+  </ol>
+  <p style="margin-top:12px"><strong>POST /api/v1/search</strong> shows the retrieved passages
+    without calling the model at all.</p>
+
+  <h2>About this demo</h2>
+  <div class="note">
+    <p>Written answers use Claude and are capped at a small daily budget; when it runs out,
+      search keeps working and answers resume at 00:00 UTC. Requests are rate-limited per visitor.
+      Changing permissions is turned off here because everyone shares the admin login; the source
+      code shows how to run it locally, where revocation works.</p>
+    <p style="margin:0">Questions are stored in the request log, which is how the audit trail
+      works. Other visitors can't see their text, but please don't type anything personal.</p>
+  </div>
+</main>
+</body>
+</html>

@@ -35,13 +35,25 @@ MODEL_PRICING_USD_PER_MTOK: dict[str, tuple[float, float]] = {
 }
 
 
+def model_price(model: str) -> tuple[float, float] | None:
+    """Price for a model id, tolerating dated snapshots.
+
+    `claude-haiku-4-5-20251001` is priced as `claude-haiku-4-5`. Without this,
+    a dated model id would price at $0 and silently disable the spend cap.
+    """
+    if model in MODEL_PRICING_USD_PER_MTOK:
+        return MODEL_PRICING_USD_PER_MTOK[model]
+    matches = [key for key in MODEL_PRICING_USD_PER_MTOK if model.startswith(f"{key}-")]
+    return MODEL_PRICING_USD_PER_MTOK[max(matches, key=len)] if matches else None
+
+
 def estimate_cost_usd(model: str, input_tokens: int, output_tokens: int) -> float:
     """Estimate the USD cost of one LLM call.
 
     Returns 0.0 for an unknown model rather than raising: a missing price entry
     must never break a user's query. The caller is expected to log the miss.
     """
-    price = MODEL_PRICING_USD_PER_MTOK.get(model)
+    price = model_price(model)
     if price is None:
         return 0.0
     input_price, output_price = price
@@ -81,12 +93,35 @@ class Settings(BaseSettings):
     #: no password and can only be used through the dev header.
     demo_user_password: SecretStr | None = None
 
+    # --- Public demo -----------------------------------------------------
+    #: Turns on everything a public deployment needs: rate limits, a daily
+    #: model-spend cap, read-only admin endpoints, hidden visitor queries in
+    #: the audit trail, and the landing page at /. See docs/deploy.md.
+    demo_mode: bool = False
+    #: Hard ceiling on estimated model spend per UTC day, across all visitors.
+    #: None means no cap; required when demo_mode is on.
+    llm_daily_budget_usd: float | None = Field(default=None, ge=0)
+    #: Per-client limits, applied when demo_mode is on (or forced on here).
+    rate_limits_enabled: bool = False
+    rate_limit_login_per_minute: int = Field(default=10, ge=1)
+    rate_limit_search_per_minute: int = Field(default=30, ge=1)
+    rate_limit_query_per_hour: int = Field(default=15, ge=1)
+    #: How many reverse proxies sit in front of the app. The client address is
+    #: taken from that position in X-Forwarded-For, counting from the right,
+    #: because entries to the left of it are whatever the client chose to send.
+    #: 0 means use the socket address (no proxy).
+    forwarded_proxy_hops: int = Field(default=0, ge=0, le=5)
+    #: Shown on the landing page.
+    demo_repo_url: str = "https://github.com/arjunreddy0729/enterpriseiq"
+
     # --- PostgreSQL --------------------------------------------------------
     postgres_host: str = "localhost"
     postgres_port: int = 5433
     postgres_user: str = "enterpriseiq"
     postgres_password: SecretStr = SecretStr("enterpriseiq")
     postgres_db: str = "enterpriseiq"
+    #: "require" for hosted Postgres such as Neon or Supabase. Unset locally.
+    postgres_sslmode: str | None = None
     db_echo: bool = False
     db_pool_size: int = 5
     db_max_overflow: int = 10
@@ -170,6 +205,27 @@ class Settings(BaseSettings):
         return f"{value} " if value else ""
 
     @model_validator(mode="after")
+    def _demo_is_safe_to_expose(self) -> Settings:
+        """A public demo with no spend cap, or a cap that cannot be measured,
+        is an open tab on the Anthropic account. Refuse to start instead."""
+        if not self.demo_mode:
+            return self
+        if self.llm_daily_budget_usd is None:
+            raise ValueError("DEMO_MODE requires LLM_DAILY_BUDGET_USD")
+        if model_price(self.anthropic_model) is None:
+            raise ValueError(
+                f"DEMO_MODE requires a known price for ANTHROPIC_MODEL={self.anthropic_model}; "
+                "without one the spend cap cannot be enforced"
+            )
+        if self.demo_user_password is None:
+            raise ValueError("DEMO_MODE requires DEMO_USER_PASSWORD so visitors can log in")
+        return self
+
+    @property
+    def rate_limits_active(self) -> bool:
+        return self.demo_mode or self.rate_limits_enabled
+
+    @model_validator(mode="after")
     def _production_auth_is_real(self) -> Settings:
         """Fail at startup, not at the first request, if production would be
         running with password-less or forgeable authentication."""
@@ -188,10 +244,11 @@ class Settings(BaseSettings):
         """SQLAlchemy URL using psycopg 3 (`postgresql+psycopg://`)."""
         password = quote_plus(self.postgres_password.get_secret_value())
         user = quote_plus(self.postgres_user)
-        return (
+        url = (
             f"postgresql+psycopg://{user}:{password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
+        return f"{url}?sslmode={self.postgres_sslmode}" if self.postgres_sslmode else url
 
     @property
     def safe_database_url(self) -> str:

@@ -21,12 +21,15 @@ was asked to do.
 
 from __future__ import annotations
 
+import datetime as dt
 import time
 from dataclasses import dataclass, field
 from typing import Any
 
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.api.errors import BudgetExhaustedError
 from app.core.config import get_settings
 from app.core.identity import Identity
 from app.core.logging import get_logger
@@ -142,6 +145,11 @@ class QueryService:
                 before_model=True,
             )
 
+        # --- spend cap ------------------------------------------------------
+        # After both free abstention checks, so a question that would have
+        # been declined anyway never counts against the budget.
+        self._enforce_daily_budget()
+
         # --- generate --------------------------------------------------------
         generation_started = time.perf_counter()
         completion = self._llm.complete(
@@ -211,6 +219,37 @@ class QueryService:
         return outcome
 
     # -- helpers ------------------------------------------------------------
+    def spent_today_usd(self) -> float:
+        """Estimated model spend since 00:00 UTC, from query_logs."""
+        today = dt.datetime.now(dt.UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+        spent = self._session.execute(
+            select(func.coalesce(func.sum(QueryLog.estimated_cost_usd), 0)).where(
+                QueryLog.created_at >= today
+            )
+        ).scalar_one()
+        return float(spent or 0)
+
+    def _enforce_daily_budget(self) -> None:
+        """Refuse to call the model once today's estimated spend reaches the cap.
+
+        Spend is read from the request log rather than kept in memory, so it
+        survives restarts and is shared by every worker. Two limits of that:
+        concurrent requests that pass the check together can overshoot by one
+        answer each (cents, at max_tokens), and a request whose log write
+        failed is not counted.
+        """
+        budget = self._settings.llm_daily_budget_usd
+        if budget is None:
+            return
+        spent = self.spent_today_usd()
+        if spent >= budget:
+            logger.warning("daily_budget_exhausted", spent_usd=round(spent, 4), budget_usd=budget)
+            raise BudgetExhaustedError(
+                "The demo's daily budget for AI-written answers is used up. It resets at "
+                "00:00 UTC. Search (/api/v1/search) still works and costs nothing.",
+                details={"spent_usd": round(spent, 4), "budget_usd": budget},
+            )
+
     def _abstain(
         self,
         question: str,

@@ -8,7 +8,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Query
 
-from app.api.dependencies import AdminDep, SessionDep
+from app.api.dependencies import AdminDep, SessionDep, SettingsDep, WritableAdminDep
 from app.schemas.admin import (
     AccessEventOut,
     DocumentAccessReport,
@@ -17,7 +17,7 @@ from app.schemas.admin import (
     PermissionChangeOut,
     UserAccessOut,
 )
-from app.services.audit_service import AuditService
+from app.services.audit_service import AccessEvent, AuditService
 from app.services.permission_service import PermissionService
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -44,7 +44,7 @@ def get_document_permissions(
     summary="Replace a document's groups (takes effect on the next query)",
 )
 def set_document_permissions(
-    document_id: uuid.UUID, payload: GroupsUpdate, session: SessionDep, admin: AdminDep
+    document_id: uuid.UUID, payload: GroupsUpdate, session: SessionDep, admin: WritableAdminDep
 ) -> DocumentAclOut:
     acl = PermissionService(session).set_document_groups(document_id, payload.groups, admin)
     return DocumentAclOut(**asdict(acl))
@@ -64,7 +64,7 @@ def list_users(session: SessionDep, _admin: AdminDep) -> list[UserAccessOut]:
     summary="Replace a user's groups (takes effect on their next request)",
 )
 def set_user_groups(
-    user_id: uuid.UUID, payload: GroupsUpdate, session: SessionDep, admin: AdminDep
+    user_id: uuid.UUID, payload: GroupsUpdate, session: SessionDep, admin: WritableAdminDep
 ) -> UserAccessOut:
     access = PermissionService(session).set_user_groups(user_id, payload.groups, admin)
     return UserAccessOut(**asdict(access))
@@ -81,6 +81,7 @@ def set_user_groups(
 def document_access(
     document_id: uuid.UUID,
     session: SessionDep,
+    settings: SettingsDep,
     _admin: AdminDep,
     days: Annotated[int, Query(ge=1, le=365)] = 30,
     limit: Annotated[int, Query(ge=1, le=1000)] = 200,
@@ -92,8 +93,20 @@ def document_access(
         source_uri=acl.source_uri,
         days=days,
         event_count=len(events),
-        events=[AccessEventOut(**asdict(e)) for e in events],
+        events=[_present(e, hide_query=settings.demo_mode) for e in events],
     )
+
+
+#: In the public demo the admin login is shared, so the audit trail would
+#: otherwise show every visitor what every other visitor typed.
+HIDDEN_QUERY = "[hidden in the public demo]"
+
+
+def _present(event: AccessEvent, *, hide_query: bool) -> AccessEventOut:
+    out = AccessEventOut(**asdict(event))
+    if hide_query:
+        out.query = HIDDEN_QUERY
+    return out
 
 
 @router.get(

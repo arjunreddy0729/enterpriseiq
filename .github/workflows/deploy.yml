@@ -1,0 +1,64 @@
+name: Deploy demo
+
+# Redeploys the public demo after CI passes on main, so the live Space always
+# runs code that went through the leak suite. Edit here, push, and the demo
+# updates; nothing is ever edited on Hugging Face directly.
+#
+# One-time setup (see docs/deploy.md):
+#   repository secret   HF_TOKEN  - a Hugging Face token with write access
+#   repository variable HF_SPACE  - e.g. your-hf-username/enterpriseiq
+# Without them this workflow skips instead of failing, so the repo works
+# before a Space exists.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-demo
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The commit CI actually tested, not whatever main is now.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Push to the Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE: ${{ vars.HF_SPACE }}
+        run: |
+          if [ -z "$HF_TOKEN" ] || [ -z "$HF_SPACE" ]; then
+            echo "HF_TOKEN or HF_SPACE not configured; skipping deploy."
+            exit 0
+          fi
+
+          # The tested commit (GITHUB_SHA is main's tip under workflow_run).
+          sha=$(git rev-parse --short HEAD)
+
+          # Assemble exactly what the Space needs: the app, the corpus, and
+          # the deploy Dockerfile and Space README at its root.
+          site=$(mktemp -d)
+          rsync -a --exclude tests --exclude '.venv' --exclude '__pycache__' backend/ "$site/backend/"
+          cp -r corpus "$site/corpus"
+          cp deploy/huggingface/Dockerfile "$site/Dockerfile"
+          cp deploy/huggingface/README.md "$site/README.md"
+
+          # A fresh single-commit history each time: the Space is a build
+          # target, and its history is the GitHub repo's, not its own.
+          cd "$site"
+          git init -q -b main
+          git config user.name "deploy-bot"
+          git config user.email "deploy-bot@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Deploy ${sha} from GitHub"
+          git push -q --force "https://user:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE}" main
+          echo "Deployed to https://huggingface.co/spaces/${HF_SPACE}"
