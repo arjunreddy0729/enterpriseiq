@@ -160,7 +160,12 @@ def test_restricted_text_never_reaches_the_prompt(session: Session) -> None:
     stub = StubLLMClient("Answer [1].")
     identity = resolve_identity(session, ENGINEER)
     QueryService(session, get_embedder(), stub).answer(
-        "compensation bands bonus target equity refresh", identity
+        # A question the engineer may legitimately get an answer to, whose
+        # evidence (remote-work-policy.md) names the HR-only compensation
+        # policy. A purely HR question is now declined before the model is
+        # called at all, which would leave no prompt to inspect.
+        "Does working remotely change my compensation or salary band?",
+        identity,
     )
     assert stub.calls, "expected the model to be called"
     _system, user_prompt = stub.calls[0]

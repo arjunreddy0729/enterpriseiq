@@ -108,8 +108,11 @@ class QueryService:
         candidates = retrieval.candidates
 
         # --- abstain before spending a token -------------------------------
-        top_score = candidates[0].final_score if candidates else 0.0
-        if not candidates or top_score < settings.generation_min_candidate_score:
+        # Gate on absolute similarity, not the fused score: RRF is rank-based,
+        # so the top candidate scores about the same whether or not it is
+        # relevant. See generation_min_similarity in config.
+        top_similarity = max((c.vector_score or 0.0 for c in candidates), default=0.0)
+        if top_similarity < settings.generation_min_similarity:
             return self._abstain(
                 question,
                 candidates,
@@ -117,7 +120,14 @@ class QueryService:
                 started,
                 reason="no_relevant_candidates",
                 before_model=True,
-                debug={"top_score": top_score} if include_debug else {},
+                debug=(
+                    {
+                        "top_similarity": round(top_similarity, 4),
+                        "min_similarity": settings.generation_min_similarity,
+                    }
+                    if include_debug
+                    else {}
+                ),
             )
 
         # --- assemble context ----------------------------------------------

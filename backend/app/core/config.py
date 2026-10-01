@@ -117,11 +117,19 @@ class Settings(BaseSettings):
     anthropic_max_retries: int = 2
 
     # --- Generation --------------------------------------------------------
-    #: Below this fused score, the best candidate is treated as unrelated to
-    #: the question and we abstain WITHOUT calling the model. Retrieval
-    #: returning nothing relevant is the most common cause of a hallucinated
-    #: answer, and it is also the cheapest one to catch.
-    generation_min_candidate_score: float = 0.02
+    #: If no retrieved passage reaches this cosine similarity to the question,
+    #: abstain WITHOUT calling the model. Retrieval returning nothing relevant
+    #: is the most common cause of a hallucinated answer, and the cheapest to
+    #: catch.
+    #:
+    #: Deliberately NOT the fused RRF score. RRF is built from ranks, so the
+    #: best candidate scores ~1/61 + 1/61 whether or not it is relevant: on the
+    #: benchmark every question, answerable or not, scored 0.0300-0.0328, and
+    #: no threshold could separate them. Cosine similarity is absolute. Every
+    #: question that must be declined scored <= 0.572 and every answerable one
+    #: >= 0.634; 0.60 is the midpoint of that gap. Measured on 35 cases only,
+    #: so the model's own abstention stays as the second line of defense.
+    generation_min_similarity: float = Field(default=0.60, ge=0.0, le=1.0)
     #: A sentence must reach this support score against its cited chunks to
     #: count as grounded.
     grounding_support_threshold: float = 0.45

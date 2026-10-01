@@ -180,12 +180,40 @@ uncalibrated one actively harmful.
 
 ### Two abstention points
 
-- **Before the model runs.** If nothing retrieved clears a relevance floor, no
-  API call is made. Retrieval finding nothing relevant is the most common cause
-  of an invented answer, and the cheapest to prevent.
+- **Before the model runs.** If no retrieved passage is similar enough to the
+  question, no API call is made. Retrieval finding nothing relevant is the most
+  common cause of an invented answer, and the cheapest to prevent.
 - **After the model runs.** A sentinel token lets the model say the passages
   didn't answer the question, detected deterministically rather than by
   string-matching prose.
+
+**A bug in the first gate, found in a live demo.** It originally compared the
+fused RRF score to a floor. An engineer asking *"What are the bonus targets by
+level?"* (an HR-only answer) got a correct refusal, but only from the second
+gate: Claude was called, at about $0.013, with three unrelated on-call
+documents. The first gate let them through because **RRF is built from ranks,
+not relevance.** The top candidate scores about `1/61 + 1/61` whether or not it
+answers anything.
+
+Measured across all 34 benchmark questions plus that demo question:
+
+| Signal at the top of retrieval | must decline (12) | answerable (23) | separable? |
+|---|---|---|---|
+| fused RRF score | 0.0300 – 0.0328 | 0.0318 – 0.0328 | no, fully overlapping |
+| best cosine similarity | **0.458 – 0.572** | **0.634 – 0.787** | yes, a 0.062 gap |
+
+The gate now uses cosine similarity with a threshold of **0.60**, the midpoint of
+that gap. Now all 12 are declined before the model, at $0, and all 23
+answerable questions still reach it. A free test
+([`test_relevance_gate.py`](backend/tests/integration/test_relevance_gate.py))
+runs every benchmark question through the gate with a stub model and fails in
+both directions: with the gate off, 13 cases fail; at 0.70, 8 answerable
+questions are wrongly declined.
+
+The honest caveat: the threshold was chosen on the same 35 questions it is
+tested on, and a 0.062 gap on a small, easy corpus will narrow on a harder one.
+That is why the model's own abstention stays as the second line of defense, and
+why the test pins the threshold to the data, so drift fails loudly.
 
 ### Authentication carries identity, never permissions
 
@@ -349,7 +377,7 @@ python -m scripts.compare_eval before.json after.json
 | Auth | PyJWT (HS256) + stdlib scrypt | no hosted identity provider; free and local |
 | Generation | Claude via the Anthropic SDK | the only paid component |
 | Migrations | Alembic | |
-| Tests | pytest — **672 passing**, incl. 300-case leak suite | |
+| Tests | pytest — **708 passing**, incl. 300-case leak suite | |
 
 **No LangChain or LlamaIndex.** Not dogma: hybrid retrieval, fusion, ACL
 enforcement, citation resolution and grounding *are* this project. Behind a
