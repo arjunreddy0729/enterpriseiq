@@ -99,9 +99,7 @@ def resolve(answer: str, bundle: ContextBundle) -> CitationResult:
         # Not an error: the model referenced a passage that does not exist, we
         # noticed, and the claim loses its citation rather than gaining a fake
         # source. Logged because a rising rate here means the prompt is drifting.
-        logger.warning(
-            "invalid_citation_numbers", invalid=invalid, valid=sorted(valid)
-        )
+        logger.warning("invalid_citation_numbers", invalid=invalid, valid=sorted(valid))
 
     # Renumber in order of first appearance among the valid ones.
     order: list[int] = []

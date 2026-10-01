@@ -72,9 +72,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print("\n" + "-" * 70)
     for outcome in report.outcomes:
-        marker = {"ingested": "+", "updated": "~", "unchanged": "=", "failed": "!"}[
-            outcome.status
-        ]
+        marker = {"ingested": "+", "updated": "~", "unchanged": "=", "failed": "!"}[outcome.status]
         detail = outcome.error or f"{outcome.chunks} chunks"
         print(f"  {marker} {outcome.path:<55} {detail}")
     print("-" * 70)

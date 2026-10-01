@@ -25,7 +25,7 @@ from app.core.config import get_settings
 from app.core.identity import resolve_identity
 from app.core.logging import get_logger
 from app.evaluation import metrics
-from app.evaluation.dataset import Category, EvalCase, EvalDataset
+from app.evaluation.dataset import EvalCase, EvalDataset
 from app.generation.llm import LLMClient
 from app.retrieval.embedder import get_embedder
 from app.retrieval.pipeline import HybridRetrievalPipeline
@@ -173,15 +173,11 @@ class RunReport:
         with_facts = [r for r in answered if r.fact_coverage is not None]
         return {
             "answered": len(answered),
-            "fact_coverage": round(
-                metrics.mean([r.fact_coverage or 0.0 for r in with_facts]), 4
-            ),
+            "fact_coverage": round(metrics.mean([r.fact_coverage or 0.0 for r in with_facts]), 4),
             "citation_precision": round(
                 metrics.mean([r.citation_precision or 0.0 for r in answered]), 4
             ),
-            "grounding": round(
-                metrics.mean([r.grounding_score or 0.0 for r in answered]), 4
-            ),
+            "grounding": round(metrics.mean([r.grounding_score or 0.0 for r in answered]), 4),
             "confidence_bands": {
                 band: sum(1 for r in answered if r.confidence == band)
                 for band in ("high", "medium", "low")
@@ -271,9 +267,7 @@ class EvaluationRunner:
         started = time.perf_counter()
 
         if self._llm is None:
-            pipeline = HybridRetrievalPipeline(
-                self._session, self._embedder, self._reranker
-            )
+            pipeline = HybridRetrievalPipeline(self._session, self._embedder, self._reranker)
             retrieval = pipeline.retrieve(
                 text=case.question,
                 allowed_group_ids=identity.group_ids,
@@ -281,9 +275,7 @@ class EvaluationRunner:
             )
             candidates = retrieval.candidates
         else:
-            service = QueryService(
-                self._session, self._embedder, self._llm, self._reranker
-            )
+            service = QueryService(self._session, self._embedder, self._llm, self._reranker)
             outcome = service.answer(case.question, identity, top_k=top_k)
             candidates = outcome.candidates
 
@@ -291,9 +283,7 @@ class EvaluationRunner:
             result.abstained = not outcome.answered
             result.abstention_correct = result.abstained == case.must_abstain
             result.answer = outcome.answer
-            result.cited_documents = _unique(
-                c.source_uri for c in outcome.citations
-            )
+            result.cited_documents = _unique(c.source_uri for c in outcome.citations)
             result.confidence = outcome.confidence
             result.grounding_score = float(outcome.grounding.get("score", 0.0))
             result.input_tokens = int(outcome.usage.get("input_tokens") or 0)
@@ -318,13 +308,9 @@ class EvaluationRunner:
         if case.expected_sources:
             for k in CUTOFFS:
                 result.recall[k] = metrics.recall_at_k(documents, case.expected_sources, k)
-                result.precision[k] = metrics.precision_at_k(
-                    documents, case.expected_sources, k
-                )
+                result.precision[k] = metrics.precision_at_k(documents, case.expected_sources, k)
                 result.ndcg[k] = metrics.ndcg_at_k(documents, case.expected_sources, k)
-            result.reciprocal_rank = metrics.reciprocal_rank(
-                documents, case.expected_sources
-            )
+            result.reciprocal_rank = metrics.reciprocal_rank(documents, case.expected_sources)
 
         if case.forbidden_sources:
             leaked_docs = set(documents) & set(case.forbidden_sources)

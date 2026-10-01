@@ -139,7 +139,7 @@ def _render_block(number: int, candidate: Candidate) -> str:
     prompt-injection vector, and the fence plus the instruction is the cheap
     part of defending against it.
     """
-    parts = [f"<passage id=\"{number}\">"]
+    parts = [f'<passage id="{number}">']
     parts.append(f"Title: {candidate.document_title}")
     if candidate.section_path:
         parts.append(f"Section: {candidate.section_path}")

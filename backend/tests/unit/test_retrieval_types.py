@@ -8,13 +8,13 @@ overlap the schema is indexed for.
 from __future__ import annotations
 
 import datetime as dt
+import uuid
 
 import pytest
 from sqlalchemy.dialects import postgresql
 
 from app.retrieval.filters import access_predicate, build_where, describe
 from app.retrieval.types import Candidate, Filters, RetrievalQuery
-import uuid
 
 
 def compile_sql(clause: object) -> str:
@@ -93,9 +93,7 @@ def test_date_filters_compile() -> None:
     query = RetrievalQuery(
         text="x",
         allowed_group_ids=(1,),
-        filters=Filters(
-            updated_after=dt.date(2026, 1, 1), updated_before=dt.date(2026, 6, 1)
-        ),
+        filters=Filters(updated_after=dt.date(2026, 1, 1), updated_before=dt.date(2026, 6, 1)),
     )
     sql = compile_sql(build_where(query))
     assert "source_updated_at" in sql
@@ -103,9 +101,7 @@ def test_date_filters_compile() -> None:
 
 def test_describe_reports_the_groups_in_play() -> None:
     described = describe(
-        RetrievalQuery(
-            text="x", allowed_group_ids=(4, 5), filters=Filters(departments=("hr",))
-        )
+        RetrievalQuery(text="x", allowed_group_ids=(4, 5), filters=Filters(departments=("hr",)))
     )
     assert described["allowed_group_ids"] == [4, 5]
     assert described["departments"] == ["hr"]

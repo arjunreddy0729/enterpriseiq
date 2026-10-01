@@ -87,7 +87,9 @@ def test_a_user_with_no_access_abstains_without_calling_the_model(
 # ---------------------------------------------------------------------------
 def test_answer_citations_resolve_to_real_documents(session: Session) -> None:
     outcome = ask(
-        session, ENGINEER, "How does service authentication work?",
+        session,
+        ENGINEER,
+        "How does service authentication work?",
         "Services authenticate with OAuth 2.0 client credentials [1].",
     )
     assert outcome.status == "answered"
@@ -99,7 +101,9 @@ def test_answer_citations_resolve_to_real_documents(session: Session) -> None:
 
 def test_fabricated_citation_is_dropped_end_to_end(session: Session) -> None:
     outcome = ask(
-        session, ENGINEER, "How does authentication work?",
+        session,
+        ENGINEER,
+        "How does authentication work?",
         "A real claim [1]. A claim citing a passage that was never supplied [99].",
     )
     assert "[99]" not in outcome.answer
@@ -111,7 +115,9 @@ def test_only_permitted_documents_can_be_cited(session: Session) -> None:
     scripted to cite everything, no restricted document can appear, because no
     restricted passage ever entered the context."""
     outcome = ask(
-        session, ENGINEER, "What are the compensation bands and bonus targets?",
+        session,
+        ENGINEER,
+        "What are the compensation bands and bonus targets?",
         "Claim [1][2][3][4][5][6].",
     )
     for citation in outcome.citations:
@@ -120,9 +126,7 @@ def test_only_permitted_documents_can_be_cited(session: Session) -> None:
 
 
 def test_hr_user_can_cite_the_hr_document(session: Session) -> None:
-    outcome = ask(
-        session, HR_PERSON, "What are the bonus targets by level?", "Claim [1][2][3]."
-    )
+    outcome = ask(session, HR_PERSON, "What are the bonus targets by level?", "Claim [1][2][3].")
     uris = {c.source_uri for c in outcome.citations}
     assert "hr/compensation-policy.md" in uris
 
@@ -132,7 +136,9 @@ def test_hr_user_can_cite_the_hr_document(session: Session) -> None:
 # ---------------------------------------------------------------------------
 def test_invented_content_scores_badly_on_grounding(session: Session) -> None:
     outcome = ask(
-        session, ENGINEER, "How does authentication work?",
+        session,
+        ENGINEER,
+        "How does authentication work?",
         "Northwind authenticates using biometric retina scanning at every office turnstile [1].",
     )
     assert outcome.grounding["score"] < 0.5
@@ -141,7 +147,9 @@ def test_invented_content_scores_badly_on_grounding(session: Session) -> None:
 
 def test_an_answer_citing_nothing_is_low_confidence(session: Session) -> None:
     outcome = ask(
-        session, ENGINEER, "How does authentication work?",
+        session,
+        ENGINEER,
+        "How does authentication work?",
         "Services authenticate somehow, and it is generally quite secure overall.",
     )
     assert outcome.confidence == "low"

@@ -110,5 +110,5 @@ class KeywordRetriever:
 
     def explain(self, query: RetrievalQuery) -> dict[str, Any]:
         """What the query parsed to - useful when a search returns nothing."""
-        parsed = self._session.execute(select(build_tsquery(query.text))).scalar_one()
+        parsed: object = self._session.execute(select(build_tsquery(query.text))).scalar_one()
         return {"tsquery": str(parsed)}

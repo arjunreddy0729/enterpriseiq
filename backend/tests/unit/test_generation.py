@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import datetime as dt
-import uuid
 
+from app.generation.citations import resolve
 from app.generation.confidence import (
     Confidence,
     ConfidenceSignals,
@@ -13,11 +13,10 @@ from app.generation.confidence import (
     explain,
 )
 from app.generation.context import build_context
-from app.generation.citations import resolve
 from app.generation.grounding import lexical_support, verify
 from app.generation.prompts import INSUFFICIENT_EVIDENCE, SYSTEM_PROMPT, build_user_prompt
 from app.retrieval.types import Candidate
-from tests.unit.test_citations import bundle_of, candidate
+from tests.unit.test_citations import candidate
 
 
 def sized_candidate(name: str, words: int) -> Candidate:
@@ -89,7 +88,7 @@ def test_system_prompt_warns_about_injection() -> None:
 
 
 def test_user_prompt_puts_the_question_last() -> None:
-    prompt = build_user_prompt("What is the cap?", "<passage id=\"1\">x</passage>")
+    prompt = build_user_prompt("What is the cap?", '<passage id="1">x</passage>')
     assert prompt.index("<passage") < prompt.index("What is the cap?")
 
 
@@ -137,14 +136,14 @@ def test_answer_with_no_claim_sentences_is_vacuously_grounded() -> None:
 # Confidence
 # ---------------------------------------------------------------------------
 def signals(**overrides: object) -> ConfidenceSignals:
-    base = dict(
-        top_score=0.05,
-        score_margin=0.02,
-        supporting_documents=2,
-        grounding_score=1.0,
-        citation_count=2,
-        uncited_claims=0,
-    )
+    base = {
+        "top_score": 0.05,
+        "score_margin": 0.02,
+        "supporting_documents": 2,
+        "grounding_score": 1.0,
+        "citation_count": 2,
+        "uncited_claims": 0,
+    }
     base.update(overrides)
     return ConfidenceSignals(**base)  # type: ignore[arg-type]
 

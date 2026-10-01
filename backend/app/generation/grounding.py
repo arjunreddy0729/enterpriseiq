@@ -40,9 +40,58 @@ _WORD = re.compile(r"[a-z0-9$%.:/-]+")
 
 #: Words too common to be evidence of anything.
 _STOPWORDS = frozenset(
-    """a an and are as at be by for from has have in is it its of on or that the
-    to was were will with which this these those they their our we you your not
-    but if then than can may must should would could into over under""".split()
+    [
+        "a",
+        "an",
+        "and",
+        "are",
+        "as",
+        "at",
+        "be",
+        "by",
+        "for",
+        "from",
+        "has",
+        "have",
+        "in",
+        "is",
+        "it",
+        "its",
+        "of",
+        "on",
+        "or",
+        "that",
+        "the",
+        "to",
+        "was",
+        "were",
+        "will",
+        "with",
+        "which",
+        "this",
+        "these",
+        "those",
+        "they",
+        "their",
+        "our",
+        "we",
+        "you",
+        "your",
+        "not",
+        "but",
+        "if",
+        "then",
+        "than",
+        "can",
+        "may",
+        "must",
+        "should",
+        "would",
+        "could",
+        "into",
+        "over",
+        "under",
+    ]
 )
 
 

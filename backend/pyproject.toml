@@ -98,5 +98,18 @@ disallow_untyped_defs = true
 exclude = ["alembic/versions/"]
 
 [[tool.mypy.overrides]]
-module = ["pgvector.*", "sentence_transformers.*"]
+# Optional extras (ml, parsers) are not installed by the CI lint job, so their
+# imports must resolve to Any there and type-check normally where installed.
+module = [
+    "docx",
+    "docx.*",
+    "numpy",
+    "numpy.*",
+    "pgvector.*",
+    "pymupdf",
+    "pymupdf.*",
+    "sentence_transformers.*",
+    "transformers",
+    "transformers.*",
+]
 ignore_missing_imports = true

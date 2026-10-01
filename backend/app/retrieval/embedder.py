@@ -76,9 +76,7 @@ class BGEEmbedder:
             try:
                 from sentence_transformers import SentenceTransformer
             except ImportError as exc:  # pragma: no cover - optional extra
-                raise RuntimeError(
-                    "Embeddings need the 'ml' extra: pip install '.[ml]'"
-                ) from exc
+                raise RuntimeError("Embeddings need the 'ml' extra: pip install '.[ml]'") from exc
 
             logger.info("embedder_loading", model=self._model_name)
             model = SentenceTransformer(self._model_name, device="cpu")

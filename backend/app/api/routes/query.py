@@ -51,11 +51,11 @@ def query(
 
     return QueryResponse(
         request_id=request_id,
-        status=outcome.status,  # type: ignore[arg-type]
+        status=outcome.status,
         query=payload.query,
         answer=outcome.answer,
         citations=[CitationOut.from_citation(c) for c in outcome.citations],
-        confidence=outcome.confidence,  # type: ignore[arg-type]
+        confidence=outcome.confidence,
         confidence_explanation=outcome.confidence_explanation,
         confidence_signals=outcome.signals,
         grounding=GroundingOut(**outcome.grounding),

@@ -135,9 +135,7 @@ class IngestionPipeline:
         self._config = config or ChunkingConfig.from_settings()
 
     # -- entry points -------------------------------------------------------
-    def ingest_manifest(
-        self, corpus_dir: Path, *, force: bool = False
-    ) -> IngestionReport:
+    def ingest_manifest(self, corpus_dir: Path, *, force: bool = False) -> IngestionReport:
         """Ingest every document declared in `corpus_dir/manifest.yaml`."""
         started = time.perf_counter()
         manifest = load_manifest(corpus_dir / "manifest.yaml")
@@ -177,9 +175,7 @@ class IngestionPipeline:
         digest = content_hash(parsed.text)
 
         existing = self._session.execute(
-            select(Document).where(
-                Document.source_uri == entry.path, Document.status != "deleted"
-            )
+            select(Document).where(Document.source_uri == entry.path, Document.status != "deleted")
         ).scalar_one_or_none()
 
         if existing is not None and existing.content_hash == digest and not force:
@@ -269,9 +265,7 @@ class IngestionPipeline:
             delete(DocumentPermission).where(DocumentPermission.document_id == document.id)
         )
         for group_id in group_ids:
-            self._session.add(
-                DocumentPermission(document_id=document.id, group_id=group_id)
-            )
+            self._session.add(DocumentPermission(document_id=document.id, group_id=group_id))
 
         # Keep the denormalised copy on chunks in step. For an unchanged
         # document this is the only write, so an ACL edit is cheap.

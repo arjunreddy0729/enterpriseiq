@@ -64,9 +64,7 @@ def restricted_chunk_texts(session: Session, source_uri: str, limit: int = 4) ->
 def search_uris(session: Session, email: str, query: str, top_k: int = 20) -> set[str]:
     identity = resolve_identity(session, email)
     pipeline = HybridRetrievalPipeline(session, get_embedder())
-    result = pipeline.retrieve(
-        text=query, allowed_group_ids=identity.group_ids, top_k=top_k
-    )
+    result = pipeline.retrieve(text=query, allowed_group_ids=identity.group_ids, top_k=top_k)
     return {c.source_uri for c in result.candidates}
 
 
@@ -83,10 +81,7 @@ def test_engineer_cannot_retrieve_hr_compensation_policy(session: Session) -> No
 def test_hr_can_retrieve_it(session: Session) -> None:
     """The mirror image - otherwise the test above passes on a broken index."""
     texts = restricted_chunk_texts(session, "hr/compensation-policy.md")
-    hits = [
-        "hr/compensation-policy.md" in search_uris(session, HR_PERSON, t[:400])
-        for t in texts
-    ]
+    hits = ["hr/compensation-policy.md" in search_uris(session, HR_PERSON, t[:400]) for t in texts]
     assert any(hits), "HR must be able to retrieve their own restricted policy"
 
 
@@ -109,9 +104,7 @@ def test_hr_can_retrieve_it(session: Session) -> None:
         (LEGAL, "engineering/deployment-runbook.md"),
     ],
 )
-def test_restricted_documents_are_unreachable(
-    session: Session, email: str, forbidden: str
-) -> None:
+def test_restricted_documents_are_unreachable(session: Session, email: str, forbidden: str) -> None:
     for text in restricted_chunk_texts(session, forbidden, limit=3):
         assert forbidden not in search_uris(session, email, text[:400])
 
@@ -194,12 +187,16 @@ def unique_markers(session: Session, source_uri: str) -> list[str]:
             # Long prose lines only: skip headings, table rows and code.
             if len(stripped) < 60 or stripped[0] in "|#`-*>":
                 continue
-            owners = session.execute(
-                select(Document.source_uri)
-                .join(Chunk, Chunk.document_id == Document.id)
-                .where(Chunk.content.contains(stripped[:60]))
-                .distinct()
-            ).scalars().all()
+            owners = (
+                session.execute(
+                    select(Document.source_uri)
+                    .join(Chunk, Chunk.document_id == Document.id)
+                    .where(Chunk.content.contains(stripped[:60]))
+                    .distinct()
+                )
+                .scalars()
+                .all()
+            )
             if owners == [source_uri]:
                 markers.append(stripped[:60])
                 break
@@ -216,9 +213,7 @@ def test_restricted_text_never_reaches_the_caller(session: Session) -> None:
     pipeline = HybridRetrievalPipeline(session, get_embedder())
 
     for query in ("compensation bands", "bonus target by level", "equity refresh grant"):
-        result = pipeline.retrieve(
-            text=query, allowed_group_ids=identity.group_ids, top_k=20
-        )
+        result = pipeline.retrieve(text=query, allowed_group_ids=identity.group_ids, top_k=20)
         body = "\n".join(c.content for c in result.candidates)
         for marker in markers:
             assert marker not in body
@@ -233,9 +228,7 @@ def test_chunk_acls_match_the_manifest(session: Session) -> None:
     from app.core.config import get_settings
 
     manifest = load_manifest(get_settings().corpus_dir / "manifest.yaml")
-    name_by_id = {
-        row.id: row.name for row in session.execute(select(Group.id, Group.name))
-    }
+    name_by_id = {row.id: row.name for row in session.execute(select(Group.id, Group.name))}
 
     for entry in manifest.documents:
         rows = session.execute(

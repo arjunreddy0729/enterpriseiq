@@ -106,9 +106,7 @@ def test_exact_identifier_is_found_by_keyword(client: TestClient) -> None:
     """An identifier is nearly meaningless semantically, so the embedding
     barely encodes it. IDF weights it most heavily. This is the case dense
     retrieval alone loses."""
-    body = search(
-        client, ENGINEER, query="X-Cardinal-Signature", include_debug=True, top_k=5
-    )
+    body = search(client, ENGINEER, query="X-Cardinal-Signature", include_debug=True, top_k=5)
     assert body["debug"]["keyword_candidates"] >= 1
     top = body["results"][0]
     assert "keyword" in top["scores"]["retrieved_by"]
@@ -129,9 +127,7 @@ def test_paraphrase_is_found_by_vectors(client: TestClient) -> None:
 
 
 def test_fusion_promotes_agreement(client: TestClient) -> None:
-    body = search(
-        client, ENGINEER, query="oauth client credentials token expiry", top_k=5
-    )
+    body = search(client, ENGINEER, query="oauth client credentials token expiry", top_k=5)
     top = body["results"][0]
     assert top["scores"]["rrf_score"] is not None
 
@@ -153,9 +149,7 @@ def test_department_filter_narrows_results(client: TestClient) -> None:
 
 def test_filters_cannot_widen_access(client: TestClient) -> None:
     """Asking for the HR department as an engineer returns nothing, not HR."""
-    body = search(
-        client, ENGINEER, query="compensation", filters={"departments": ["hr"]}, top_k=10
-    )
+    body = search(client, ENGINEER, query="compensation", filters={"departments": ["hr"]}, top_k=10)
     for result in body["results"]:
         assert result["classification"] != "restricted"
         assert not result["source_uri"].startswith("hr/compensation")

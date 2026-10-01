@@ -39,7 +39,7 @@ _HNSW_EF_SEARCH = 100
 _HNSW_MAX_SCAN_TUPLES = 20_000
 
 
-def candidate_columns() -> Select[Any]:
+def candidate_columns() -> Select:
     """The column set every retriever returns, so Candidate can be built once."""
     return select(
         Chunk.id,

@@ -33,9 +33,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--top-k", type=int, default=10)
     parser.add_argument("--label", type=str, default=None)
     parser.add_argument("--no-save", action="store_true")
-    parser.add_argument(
-        "--rerank", action="store_true", help="enable the cross-encoder reranker"
-    )
+    parser.add_argument("--rerank", action="store_true", help="enable the cross-encoder reranker")
     args = parser.parse_args(argv)
 
     settings = get_settings()

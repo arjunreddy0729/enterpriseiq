@@ -42,8 +42,7 @@ class EvalCase(BaseModel):
     def _coherent(self) -> EvalCase:
         if self.must_abstain and self.expected_facts:
             raise ValueError(
-                f"{self.id}: a case that must abstain cannot also expect facts "
-                "in the answer"
+                f"{self.id}: a case that must abstain cannot also expect facts in the answer"
             )
         if not self.must_abstain and not self.expected_sources:
             raise ValueError(f"{self.id}: an answerable case needs expected_sources")

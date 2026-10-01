@@ -56,7 +56,9 @@ def test_paragraphs_split_on_blank_lines() -> None:
 
 def test_heading_paths_are_assigned(tmp_path: Path) -> None:
     path = tmp_path / "handbook.txt"
-    path.write_text("ROTATION\n\nWeekly rotation.\n\nESCALATION\n\nPage the IC.\n", encoding="utf-8")
+    path.write_text(
+        "ROTATION\n\nWeekly rotation.\n\nESCALATION\n\nPage the IC.\n", encoding="utf-8"
+    )
     document = parser.parse(path)
     bodies = [b for b in document.blocks if b.type is BlockType.PARAGRAPH]
     assert bodies[0].heading_path == ("ROTATION",)

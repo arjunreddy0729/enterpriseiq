@@ -34,8 +34,12 @@ def compare(before: dict[str, Any], after: dict[str, Any]) -> str:
     add("=" * 74)
     add("  BENCHMARK COMPARISON")
     add("=" * 74)
-    add(f"  before : {before['config'].get('reranker_enabled') and 'reranked' or 'baseline'}  ({before['mode']} mode)")
-    add(f"  after  : {after['config'].get('reranker_enabled') and 'reranked' or 'baseline'}  ({after['mode']} mode)")
+    add(
+        f"  before : {(before['config'].get('reranker_enabled') and 'reranked') or 'baseline'}  ({before['mode']} mode)"
+    )
+    add(
+        f"  after  : {(after['config'].get('reranker_enabled') and 'reranked') or 'baseline'}  ({after['mode']} mode)"
+    )
     add("")
 
     br, ar = before["retrieval"], after["retrieval"]
@@ -79,12 +83,10 @@ def compare(before: dict[str, Any], after: dict[str, Any]) -> str:
         if b_cases[cid]["retrieved_documents"] != a_cases[cid]["retrieved_documents"]
     ]
     improved = [
-        cid for cid in shared
-        if a_cases[cid]["reciprocal_rank"] > b_cases[cid]["reciprocal_rank"]
+        cid for cid in shared if a_cases[cid]["reciprocal_rank"] > b_cases[cid]["reciprocal_rank"]
     ]
     regressed = [
-        cid for cid in shared
-        if a_cases[cid]["reciprocal_rank"] < b_cases[cid]["reciprocal_rank"]
+        cid for cid in shared if a_cases[cid]["reciprocal_rank"] < b_cases[cid]["reciprocal_rank"]
     ]
 
     add("  PER-CASE")

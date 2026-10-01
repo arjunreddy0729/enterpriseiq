@@ -114,9 +114,7 @@ def test_overlap_cannot_push_a_chunk_over_the_ceiling() -> None:
     path that caused the breach.
     """
     config = ChunkingConfig(target_tokens=450, max_tokens=700, overlap_tokens=60)
-    blocks = assign_heading_paths(
-        [heading("Doc", 1), sized(120), sized(34), sized(660)]
-    )
+    blocks = assign_heading_paths([heading("Doc", 1), sized(120), sized(34), sized(660)])
     for chunk in chunk_blocks(blocks, config, counter):
         assert chunk.token_count <= config.max_tokens or chunk.is_split_block
 
@@ -189,10 +187,14 @@ def test_break_level_changes_the_outcome_in_both_directions() -> None:
         [heading("Doc", 1), heading("A", 2), sized(80), heading("B", 2), sized(80)]
     )
     at_one = chunk_blocks(
-        blocks, ChunkingConfig(target_tokens=5000, max_tokens=6000, break_on_heading_level=1), counter
+        blocks,
+        ChunkingConfig(target_tokens=5000, max_tokens=6000, break_on_heading_level=1),
+        counter,
     )
     at_two = chunk_blocks(
-        blocks, ChunkingConfig(target_tokens=5000, max_tokens=6000, break_on_heading_level=2), counter
+        blocks,
+        ChunkingConfig(target_tokens=5000, max_tokens=6000, break_on_heading_level=2),
+        counter,
     )
     assert len(at_one) == 1
     assert len(at_two) == 2
@@ -225,7 +227,9 @@ def test_prefix_can_be_turned_off_at_the_chunk_level() -> None:
 # ---------------------------------------------------------------------------
 def test_oversized_code_block_fragments_stay_valid_and_flagged() -> None:
     body = "\n".join(f"variable_{i} = compute_something({i})" for i in range(400))
-    blocks = assign_heading_paths([heading("Doc", 1), Block(type=BlockType.CODE, text=body, lang="python")])
+    blocks = assign_heading_paths(
+        [heading("Doc", 1), Block(type=BlockType.CODE, text=body, lang="python")]
+    )
     chunks = chunk_blocks(blocks, None, counter)
     assert len(chunks) > 1
     for chunk in chunks:

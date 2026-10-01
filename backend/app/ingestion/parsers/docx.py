@@ -32,12 +32,12 @@ _LIST_STYLE = re.compile(r"list|bullet", re.IGNORECASE)
 class DocxParser:
     """Parses `.docx` into blocks using Word's own paragraph styles."""
 
-    extensions = (".docx",)
+    extensions: tuple[str, ...] = (".docx",)
     source_type = "docx"
 
     def parse(self, path: Path) -> ParsedDocument:
         try:
-            import docx  # type: ignore[import-not-found]
+            import docx
             from docx.table import Table
             from docx.text.paragraph import Paragraph
         except ImportError as exc:  # pragma: no cover - optional extra

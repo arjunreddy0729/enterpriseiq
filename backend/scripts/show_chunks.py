@@ -19,6 +19,7 @@ import argparse
 import dataclasses
 import json
 import sys
+from itertools import pairwise
 from pathlib import Path
 
 from app.core.config import get_settings
@@ -98,7 +99,9 @@ def print_chunk(chunk: Chunk, cfg: ChunkingConfig, args: argparse.Namespace, col
             f"-{chunk.page_to}" if chunk.page_to != chunk.page_from else ""
         )
 
-    print(f"\n{_c(f'chunk {chunk.index:>3}', BOLD, colour)} {tag} {_c(location, DIM, colour)}{flag_text}")
+    print(
+        f"\n{_c(f'chunk {chunk.index:>3}', BOLD, colour)} {tag} {_c(location, DIM, colour)}{flag_text}"
+    )
     print(f"  {_c(trail, DIM, colour)}")
     print(f"  {_c('blocks: ' + ', '.join(t.value for t in chunk.block_types), DIM, colour)}")
 
@@ -132,7 +135,7 @@ def summarise(stats: ChunkingStats, cfg: ChunkingConfig, colour: bool) -> None:
     if stats.token_counts:
         buckets = [0, 100, 200, 300, 400, 500, 600, 700, 10_000]
         print(f"\n  {_c('token distribution', DIM, colour)}")
-        for low, high in zip(buckets, buckets[1:], strict=False):
+        for low, high in pairwise(buckets):
             count = sum(1 for t in stats.token_counts if low <= t < high)
             if not count:
                 continue
@@ -150,7 +153,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--corpus", action="store_true", help="walk a directory and summarise")
     parser.add_argument("--full", action="store_true", help="print entire chunk text")
     parser.add_argument("--json", action="store_true", dest="as_json", help="emit JSON")
-    parser.add_argument("--exact", action="store_true", help="exact BGE token counts (needs the ml extra)")
+    parser.add_argument(
+        "--exact", action="store_true", help="exact BGE token counts (needs the ml extra)"
+    )
     parser.add_argument("--target", type=positive_int, default=None)
     parser.add_argument("--max", type=positive_int, default=None)
     parser.add_argument("--overlap", type=int, default=None)

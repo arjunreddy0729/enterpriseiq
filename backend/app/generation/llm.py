@@ -140,9 +140,7 @@ class AnthropicClient:
             stop_reason=response.stop_reason,
             latency_ms=latency_ms,
             estimated_cost_usd=cost,
-            refusal_category=getattr(
-                getattr(response, "stop_details", None), "category", None
-            ),
+            refusal_category=getattr(getattr(response, "stop_details", None), "category", None),
         )
 
         logger.info(

@@ -54,7 +54,7 @@ _SETEXT_UNDERLINE = re.compile(r"^\s{0,3}(?P<char>=+|-+)\s*$")
 class MarkdownParser:
     """Parses `.md` / `.markdown` into blocks."""
 
-    extensions = (".md", ".markdown")
+    extensions: tuple[str, ...] = (".md", ".markdown")
     source_type = "markdown"
 
     def parse(self, path: Path) -> ParsedDocument:
@@ -73,9 +73,7 @@ class MarkdownParser:
             None,
         )
         if first_heading is None:
-            first_heading = next(
-                (b.text for b in blocks if b.type is BlockType.HEADING), None
-            )
+            first_heading = next((b.text for b in blocks if b.type is BlockType.HEADING), None)
 
         return ParsedDocument(
             title=derive_title(path, first_heading),
@@ -117,9 +115,9 @@ class MarkdownParser:
                 while i < n:
                     # A closing fence must be the same character, at least as long.
                     candidate = lines[i].strip()
-                    if candidate.startswith(marker[0] * len(marker)) and set(
-                        candidate
-                    ) <= set(marker[0]):
+                    if candidate.startswith(marker[0] * len(marker)) and set(candidate) <= set(
+                        marker[0]
+                    ):
                         closed = True
                         i += 1
                         break
@@ -163,9 +161,7 @@ class MarkdownParser:
             # which consumes the text line and the underline together.
             if _THEMATIC_BREAK.match(line):
                 blocks.append(
-                    Block(
-                        type=BlockType.RULE, text="---", line_start=lineno, line_end=lineno
-                    )
+                    Block(type=BlockType.RULE, text="---", line_start=lineno, line_end=lineno)
                 )
                 i += 1
                 continue
@@ -214,9 +210,7 @@ class MarkdownParser:
                     if current.strip():
                         # A heading or fence terminates the list even without a
                         # blank line before it - same reasoning as blockquotes.
-                        if i > start and (
-                            _ATX_HEADING.match(current) or _FENCE.match(current)
-                        ):
+                        if i > start and (_ATX_HEADING.match(current) or _FENCE.match(current)):
                             break
                         i += 1
                         continue

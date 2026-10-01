@@ -70,9 +70,7 @@ def test_no_chunk_exceeds_the_ceiling(all_chunks: list) -> None:
 
 def test_no_code_fence_is_cut_in_half(all_chunks: list) -> None:
     offenders = [
-        (path.name, chunk.index)
-        for path, chunk in all_chunks
-        if chunk.text.count("```") % 2 != 0
+        (path.name, chunk.index) for path, chunk in all_chunks if chunk.text.count("```") % 2 != 0
     ]
     assert not offenders, f"unbalanced code fences in: {offenders}"
 

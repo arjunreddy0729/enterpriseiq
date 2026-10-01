@@ -28,9 +28,9 @@ from app.ingestion.parsers.text import TextParser
 __all__ = [
     "DocxParser",
     "MarkdownParser",
+    "ParsedDocument",
     "Parser",
     "ParserError",
-    "ParsedDocument",
     "PdfParser",
     "TextParser",
     "UnsupportedFormatError",

@@ -47,9 +47,7 @@ def words(n: int) -> str:
 # Size invariants
 # ---------------------------------------------------------------------------
 def test_no_chunk_exceeds_max_unless_it_is_a_split_block() -> None:
-    blocks = assign_heading_paths(
-        [heading("Doc", 1)] + [para(words(60)) for _ in range(30)]
-    )
+    blocks = assign_heading_paths([heading("Doc", 1)] + [para(words(60)) for _ in range(30)])
     config = ChunkingConfig(target_tokens=200, max_tokens=300, overlap_tokens=0)
     chunks = chunk_blocks(blocks, config, counter)
 
@@ -118,9 +116,7 @@ def test_code_is_re_fenced_in_rendered_output() -> None:
 # Heading paths and prefixes
 # ---------------------------------------------------------------------------
 def test_chunk_carries_the_heading_path_of_its_first_block() -> None:
-    blocks = assign_heading_paths(
-        [heading("Doc", 1), heading("Auth", 2), para("body text here")]
-    )
+    blocks = assign_heading_paths([heading("Doc", 1), heading("Auth", 2), para("body text here")])
     chunks = chunk_blocks(blocks, None, counter)
     assert chunks[0].heading_path == ("Doc", "Auth")
 
@@ -237,9 +233,7 @@ def test_overlap_never_duplicates_a_code_block() -> None:
 
 
 def test_overlap_can_be_disabled() -> None:
-    blocks = assign_heading_paths(
-        [heading("Doc", 1)] + [para(words(50)) for _ in range(6)]
-    )
+    blocks = assign_heading_paths([heading("Doc", 1)] + [para(words(50)) for _ in range(6)])
     chunks = chunk_blocks(
         blocks, ChunkingConfig(target_tokens=60, max_tokens=200, overlap_tokens=0), counter
     )
@@ -250,17 +244,13 @@ def test_overlap_can_be_disabled() -> None:
 # Housekeeping
 # ---------------------------------------------------------------------------
 def test_chunk_indices_are_contiguous_from_zero() -> None:
-    blocks = assign_heading_paths(
-        [heading("Doc", 1)] + [para(words(80)) for _ in range(10)]
-    )
+    blocks = assign_heading_paths([heading("Doc", 1)] + [para(words(80)) for _ in range(10)])
     chunks = chunk_blocks(blocks, ChunkingConfig(target_tokens=100, max_tokens=250), counter)
     assert [c.index for c in chunks] == list(range(len(chunks)))
 
 
 def test_chunking_is_deterministic() -> None:
-    blocks = assign_heading_paths(
-        [heading("Doc", 1)] + [para(words(70)) for _ in range(12)]
-    )
+    blocks = assign_heading_paths([heading("Doc", 1)] + [para(words(70)) for _ in range(12)])
     config = ChunkingConfig(target_tokens=150, max_tokens=400)
     first = chunk_blocks(blocks, config, counter)
     second = chunk_blocks(blocks, config, counter)

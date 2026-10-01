@@ -33,7 +33,9 @@ def render(report: RunReport) -> str:
         f"vector {config.get('vector_top_k')} -> fused {config.get('fusion_top_k')} "
         f"-> eval top {config.get('eval_top_k')}"
     )
-    add(f"  chunking       target {config.get('chunk_target_tokens')} / max {config.get('chunk_max_tokens')}")
+    add(
+        f"  chunking       target {config.get('chunk_target_tokens')} / max {config.get('chunk_max_tokens')}"
+    )
     if config.get("llm_model"):
         add(f"  model          {config.get('llm_model')}")
     add("")
@@ -42,10 +44,7 @@ def render(report: RunReport) -> str:
     security = report.security_summary()
     verdict = "PASS" if security.get("pass") else "*** FAIL ***"
     add(f"  PERMISSION ENFORCEMENT                                   {verdict}")
-    add(
-        f"    {security.get('cases_checked', 0)} cases asked for a document the user "
-        f"may not read"
-    )
+    add(f"    {security.get('cases_checked', 0)} cases asked for a document the user may not read")
     add(f"    leaks: {security.get('leaks', 0)}")
     if security.get("leaked_cases"):
         for case_id in security["leaked_cases"]:
@@ -70,8 +69,7 @@ def render(report: RunReport) -> str:
     if abstention:
         add("  ABSTENTION")
         add(
-            f"    accuracy            {abstention['accuracy']:.3f}   "
-            f"{_bar(abstention['accuracy'])}"
+            f"    accuracy            {abstention['accuracy']:.3f}   {_bar(abstention['accuracy'])}"
         )
         add(
             f"    correctly declined  {abstention['correctly_declined']}"
@@ -114,10 +112,7 @@ def render(report: RunReport) -> str:
         f"p95 {system['latency_ms']['p95']}ms  max {system['latency_ms']['max']}ms"
     )
     if system["input_tokens"]:
-        add(
-            f"    tokens              {system['input_tokens']} in / "
-            f"{system['output_tokens']} out"
-        )
+        add(f"    tokens              {system['input_tokens']} in / {system['output_tokens']} out")
         add(f"    estimated cost      ${system['total_cost_usd']:.4f}")
     add(f"    wall clock          {report.duration_ms / 1000:.1f}s")
     add("")

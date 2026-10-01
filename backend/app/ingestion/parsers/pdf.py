@@ -43,12 +43,12 @@ _PARAGRAPH_GAP_RATIO = 1.6
 class PdfParser:
     """Parses `.pdf` into blocks using font-size heading reconstruction."""
 
-    extensions = (".pdf",)
+    extensions: tuple[str, ...] = (".pdf",)
     source_type = "pdf"
 
     def parse(self, path: Path) -> ParsedDocument:
         try:
-            import pymupdf  # type: ignore[import-not-found]
+            import pymupdf
         except ImportError as exc:  # pragma: no cover - optional extra
             raise ParserError(
                 path, "PDF support needs the 'parsers' extra: pip install '.[parsers]'"
@@ -128,9 +128,7 @@ class PdfParser:
             return 0.0
         return float(weights.most_common(1)[0][0])
 
-    def _lines_to_blocks(
-        self, lines: list[dict[str, Any]], body_size: float
-    ) -> list[Block]:
+    def _lines_to_blocks(self, lines: list[dict[str, Any]], body_size: float) -> list[Block]:
         blocks: list[Block] = []
         buffer: list[dict[str, Any]] = []
 

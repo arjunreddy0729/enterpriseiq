@@ -86,9 +86,7 @@ class BGEReranker:
                 return None
             return self._model
 
-    def rerank(
-        self, query: str, candidates: list[Candidate], top_n: int
-    ) -> list[Candidate]:
+    def rerank(self, query: str, candidates: list[Candidate], top_n: int) -> list[Candidate]:
         if not candidates:
             return []
 
@@ -99,12 +97,11 @@ class BGEReranker:
 
         # Score against embed_text, not content: it carries the heading trail,
         # which is often what disambiguates two similar passages.
-        pairs = [(query, candidate.embed_text) for candidate in candidates]
+        # Typed loosely: predict()'s input type differs across library versions.
+        pairs: list[Any] = [(query, candidate.embed_text) for candidate in candidates]
 
         try:
-            scores: Any = model.predict(
-                pairs, batch_size=self._batch_size, show_progress_bar=False
-            )
+            scores: Any = model.predict(pairs, batch_size=self._batch_size, show_progress_bar=False)
         except Exception as exc:
             logger.error("reranker_scoring_failed", error=str(exc))
             return candidates[:top_n]
@@ -132,9 +129,7 @@ class IdentityReranker:
     def model_name(self) -> str:
         return "identity"
 
-    def rerank(
-        self, query: str, candidates: list[Candidate], top_n: int
-    ) -> list[Candidate]:
+    def rerank(self, query: str, candidates: list[Candidate], top_n: int) -> list[Candidate]:
         return candidates[:top_n]
 
 

@@ -55,7 +55,7 @@ def looks_like_heading(line: str) -> bool:
 class TextParser:
     """Parses `.txt` / `.text` / `.log` into blocks."""
 
-    extensions = (".txt", ".text", ".log")
+    extensions: tuple[str, ...] = (".txt", ".text", ".log")
     source_type = "txt"
 
     def parse(self, path: Path) -> ParsedDocument:

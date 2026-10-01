@@ -143,8 +143,8 @@ def _check_embedding_dim(session: Session, settings: Settings) -> ComponentCheck
 
 def _check_seed(session: Session) -> ComponentCheck:
     try:
-        groups = session.execute(text("SELECT count(*) FROM groups")).scalar_one()
-        users = session.execute(text("SELECT count(*) FROM users")).scalar_one()
+        groups: int = session.execute(text("SELECT count(*) FROM groups")).scalar_one()
+        users: int = session.execute(text("SELECT count(*) FROM users")).scalar_one()
     except Exception as exc:
         return ComponentCheck(name="seed", status="fail", detail=str(exc))
     if groups == 0 or users == 0:

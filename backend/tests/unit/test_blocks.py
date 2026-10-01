@@ -24,9 +24,7 @@ def para(text: str) -> Block:
 
 
 def test_nested_headings_build_a_trail() -> None:
-    blocks = assign_heading_paths(
-        [heading("Payments", 1), heading("Auth", 2), para("body")]
-    )
+    blocks = assign_heading_paths([heading("Payments", 1), heading("Auth", 2), para("body")])
     assert blocks[0].heading_path == ("Payments",)
     assert blocks[1].heading_path == ("Payments", "Auth")
     assert blocks[2].heading_path == ("Payments", "Auth")

@@ -191,9 +191,7 @@ def render_blocks(blocks: list[Block]) -> str:
     return "\n\n".join(render_block(b) for b in blocks).strip()
 
 
-def build_embed_text(
-    text: str, heading_path: tuple[str, ...], *, include_prefix: bool
-) -> str:
+def build_embed_text(text: str, heading_path: tuple[str, ...], *, include_prefix: bool) -> str:
     """Prepend the heading trail to the chunk body.
 
     When the chunk already opens with its own leaf heading, only the ancestors
@@ -216,9 +214,7 @@ def build_embed_text(
 # ---------------------------------------------------------------------------
 # Splitting oversized blocks
 # ---------------------------------------------------------------------------
-def _hard_split(
-    piece: str, limit: int, counter: TokenCounter, *, is_code: bool
-) -> list[str]:
+def _hard_split(piece: str, limit: int, counter: TokenCounter, *, is_code: bool) -> list[str]:
     """Last-resort whitespace split for a piece that is still too large.
 
     Needed because the preferred boundaries are not guaranteed to exist: a
@@ -433,11 +429,7 @@ def chunk_blocks(
         # --- section boundary --------------------------------------------
         # No overlap is carried across a section break: the whole point of the
         # break is that the next chunk is about something else.
-        if (
-            block.is_heading
-            and (block.level or 1) <= config.break_on_heading_level
-            and current
-        ):
+        if block.is_heading and (block.level or 1) <= config.break_on_heading_level and current:
             flush()
 
         tokens = block_tokens(block)
@@ -508,9 +500,7 @@ def _make_chunk(
     anchor = next((b for b in own if not b.is_heading), own[-1])
     heading_path = anchor.heading_path
 
-    embed_text = build_embed_text(
-        text, heading_path, include_prefix=config.include_heading_prefix
-    )
+    embed_text = build_embed_text(text, heading_path, include_prefix=config.include_heading_prefix)
 
     # Size the chunk as the sum of its blocks, using each block's own ratio.
     # Counting the whole chunk in one call would apply a single ratio to mixed
