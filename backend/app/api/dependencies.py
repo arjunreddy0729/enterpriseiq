@@ -50,6 +50,9 @@ def current_identity(
         str | None,
         Header(
             alias=DEV_USER_HEADER,
+            # Hidden from /docs: it is a curl convenience, and an empty text box
+            # above the request body is where people paste their question.
+            include_in_schema=False,
             description=(
                 "Local development only: the email of a seeded user, no password. "
                 "Disabled when AUTH_DEV_HEADER_ENABLED=false and always in production."

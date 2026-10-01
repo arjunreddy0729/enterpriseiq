@@ -33,7 +33,12 @@ class SearchFilters(BaseModel):
 
 
 class SearchRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    # The example is what /docs pre-fills. Without it Swagger generates
+    # placeholder filters ("departments": ["string"]) that match nothing.
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={"examples": [{"query": "What are the bonus targets by level?"}]},
+    )
 
     query: str = Field(min_length=1, max_length=1000)
     filters: SearchFilters | None = None

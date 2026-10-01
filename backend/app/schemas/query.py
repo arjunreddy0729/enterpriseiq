@@ -12,7 +12,10 @@ from app.schemas.search import IdentitySummary, SearchFilters
 
 
 class QueryRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={"examples": [{"query": "What are the bonus targets by level?"}]},
+    )
 
     query: str = Field(min_length=3, max_length=1000)
     filters: SearchFilters | None = None
