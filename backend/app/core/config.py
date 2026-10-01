@@ -113,6 +113,10 @@ class Settings(BaseSettings):
     forwarded_proxy_hops: int = Field(default=0, ge=0, le=5)
     #: Shown on the landing page.
     demo_repo_url: str = "https://github.com/arjunreddy0729/enterpriseiq"
+    #: Where a web UI is mounted, if the deployment has one (the Hugging Face
+    #: Space mounts a Gradio UI). When set, / redirects there instead of
+    #: serving the static landing page.
+    demo_ui_path: str | None = None
 
     # --- PostgreSQL --------------------------------------------------------
     postgres_host: str = "localhost"

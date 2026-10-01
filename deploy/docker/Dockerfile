@@ -1,10 +1,12 @@
-# EnterpriseIQ public demo image, for a Hugging Face Docker Space.
+# EnterpriseIQ demo as a Docker image, for any Docker host (Cloud Run, a VPS,
+# or a paid Hugging Face Docker Space). The free Hugging Face deployment uses
+# the Gradio Space in deploy/huggingface/ instead.
 #
-# The deploy workflow (.github/workflows/deploy.yml) assembles the Space with
-# this file as its root Dockerfile, next to copies of backend/ and corpus/.
-# Differences from backend/Dockerfile, all forced by the hosting:
-#   * the embedding model is downloaded at BUILD time: free Spaces have no
-#     persistent disk, so a runtime download would repeat on every cold start;
+# Build context is a directory holding copies of backend/ and corpus/ (see
+# docs/deploy.md, "Rehearsing a deploy locally"). Compared with
+# backend/Dockerfile:
+#   * the embedding model is downloaded at BUILD time, for hosts with no
+#     persistent disk, where a runtime download would repeat on every start;
 #   * the corpus is baked in and ingested on startup (INGEST_ON_STARTUP);
 #   * it listens on 7860 and ships without dev and parser extras.
 FROM python:3.13-slim

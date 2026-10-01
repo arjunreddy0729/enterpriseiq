@@ -1,0 +1,25 @@
+# Installed by the Hugging Face Space before the rest of the repo is copied
+# in, so these mirror backend/pyproject.toml (dependencies + the ml extra)
+# rather than installing ./backend. Gradio itself is installed by the Space
+# from sdk_version in README.md.
+#
+# CPU-only torch: the default Linux wheel pulls ~3.5GB of CUDA that a CPU
+# Space can never use. The +cpu build from this index wins version selection.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.5.0
+
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+pydantic[email]>=2.9.0
+pydantic-settings>=2.6.0
+sqlalchemy>=2.0.36
+alembic>=1.14.0
+psycopg[binary]>=3.2.3
+pgvector>=0.3.6
+structlog>=24.4.0
+pyyaml>=6.0.2
+python-multipart>=0.0.12
+anthropic>=0.40.0
+pyjwt>=2.9.0
+sentence-transformers>=3.3.0
+transformers>=4.46.0

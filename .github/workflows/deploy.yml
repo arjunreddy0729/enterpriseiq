@@ -44,13 +44,14 @@ jobs:
           # The tested commit (GITHUB_SHA is main's tip under workflow_run).
           sha=$(git rev-parse --short HEAD)
 
-          # Assemble exactly what the Space needs: the app, the corpus, and
-          # the deploy Dockerfile and Space README at its root.
+          # Assemble exactly what the Gradio Space needs: the backend and the
+          # corpus, plus the Space's entry point, requirements and README
+          # (which carries the Space config) at its root.
           site=$(mktemp -d)
           rsync -a --exclude tests --exclude '.venv' --exclude '__pycache__' backend/ "$site/backend/"
           cp -r corpus "$site/corpus"
-          cp deploy/huggingface/Dockerfile "$site/Dockerfile"
-          cp deploy/huggingface/README.md "$site/README.md"
+          cp deploy/huggingface/app.py deploy/huggingface/requirements.txt \
+             deploy/huggingface/README.md "$site/"
 
           # A fresh single-commit history each time: the Space is a build
           # target, and its history is the GitHub repo's, not its own.

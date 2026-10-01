@@ -19,7 +19,7 @@ import math
 import threading
 import time
 from collections import deque
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 
 from fastapi import Depends, HTTPException, Request, status
 
@@ -68,15 +68,21 @@ limiter = SlidingWindowLimiter()
 
 
 def client_address(request: Request, proxy_hops: int) -> str:
+    return address_from(
+        request.headers, request.client.host if request.client else None, proxy_hops
+    )
+
+
+def address_from(headers: Mapping[str, str], peer: str | None, proxy_hops: int) -> str:
+    """The client's address: the proxy's entry in X-Forwarded-For when behind
+    `proxy_hops` proxies, else the socket peer."""
     if proxy_hops > 0:
         forwarded = [
-            part.strip()
-            for part in request.headers.get("x-forwarded-for", "").split(",")
-            if part.strip()
+            part.strip() for part in headers.get("x-forwarded-for", "").split(",") if part.strip()
         ]
         if len(forwarded) >= proxy_hops:
             return forwarded[-proxy_hops]
-    return request.client.host if request.client else "unknown"
+    return peer or "unknown"
 
 
 def rate_limit(

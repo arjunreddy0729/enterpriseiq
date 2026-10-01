@@ -1,4 +1,8 @@
-"""GET / - the public demo's landing page. Registered only when DEMO_MODE is on."""
+"""GET / - the public demo's front door. Registered only when DEMO_MODE is on.
+
+Serves the static landing page, or redirects to the web UI when the
+deployment mounts one (DEMO_UI_PATH).
+"""
 
 from __future__ import annotations
 
@@ -7,7 +11,7 @@ from pathlib import Path
 from string import Template
 
 from fastapi import APIRouter
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from app.api.dependencies import SettingsDep
 
@@ -17,7 +21,9 @@ _TEMPLATE = Template((Path(__file__).resolve().parents[2] / "web" / "landing.htm
 
 
 @router.get("/", response_class=HTMLResponse)
-def landing(settings: SettingsDep) -> HTMLResponse:
+def landing(settings: SettingsDep) -> Response:
+    if settings.demo_ui_path:
+        return RedirectResponse(settings.demo_ui_path)
     password = settings.demo_user_password
     page = _TEMPLATE.substitute(
         password=html.escape(password.get_secret_value() if password else ""),
