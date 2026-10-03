@@ -59,10 +59,6 @@ class BGEReranker:
     def model_name(self) -> str:
         return self._model_name
 
-    @property
-    def is_loaded(self) -> bool:
-        return self._model is not None
-
     def _load(self) -> CrossEncoder | None:
         if self._model is not None:
             return self._model

@@ -139,7 +139,7 @@ class Settings(BaseSettings):
     # skipping it) measurably degrades retrieval.
     embedding_query_prefix: str = "Represent this sentence for searching relevant passages: "
 
-    # --- Reranking (V2) ----------------------------------------------------
+    # --- Reranking (implemented, measured, off by default) -----------------
     reranker_model: str = "BAAI/bge-reranker-base"
     reranker_enabled: bool = False
 
@@ -266,10 +266,6 @@ class Settings(BaseSettings):
     @property
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.cors_allow_origins.split(",") if o.strip()]
-
-    @property
-    def manifest_path(self) -> Path:
-        return self.corpus_dir / "manifest.yaml"
 
     @property
     def llm_configured(self) -> bool:

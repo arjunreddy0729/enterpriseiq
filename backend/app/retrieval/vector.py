@@ -109,7 +109,7 @@ class VectorRetriever:
     def search_with_vector(self, query: RetrievalQuery, vector: np.ndarray) -> list[Candidate]:
         """Search with a pre-computed query vector.
 
-        Split out so a caller embedding several query variants (V2 query
+        Split out so a caller embedding several query variants (query
         rewriting) pays for the model once.
         """
         if query.sees_nothing:

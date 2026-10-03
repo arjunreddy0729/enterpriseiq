@@ -3,8 +3,7 @@
 #   docker compose up --build
 #
 # Everything here runs locally and costs nothing. The only paid component in
-# the whole project is the Anthropic API call in the generation layer, which
-# is not exercised by this milestone.
+# the whole project is the Anthropic API call in the generation layer.
 
 name: enterpriseiq
 
@@ -67,8 +66,7 @@ services:
       - ./backend:/app
       # The corpus is read-only to the API: ingestion reads it, nothing writes it.
       - ./corpus:/corpus:ro
-      # Persist downloaded model weights across container rebuilds (used from
-      # Saturday onward; harmless now).
+      # Persist downloaded model weights across container rebuilds.
       - hfcache:/opt/hf-cache
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8000/healthz"]

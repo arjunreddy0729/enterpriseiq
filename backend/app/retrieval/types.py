@@ -115,7 +115,7 @@ class Candidate:
     vector_rank: int | None = None
     #: Reciprocal-rank-fusion score, filled in by the fuser.
     rrf_score: float | None = None
-    #: Cross-encoder score, filled in by the reranker (V2).
+    #: Cross-encoder score, filled in by the reranker when enabled.
     rerank_score: float | None = None
 
     @property

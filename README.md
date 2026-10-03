@@ -528,8 +528,10 @@ corpus/         22 synthetic documents + manifest.yaml
 evaluation/     dataset.json + committed results
 ```
 
-Layering is enforced by convention: routes never import from `db/` or
-`retrieval/`. Routes → services → retrieval | generation | repositories.
+Routes stay thin: validate, authenticate, delegate. The work lives in
+`services/` (query, permissions, audit), which call `retrieval/` and
+`generation/`. The access predicate is built in exactly one place,
+`retrieval/filters.py`.
 
 ---
 
@@ -539,9 +541,10 @@ Layering is enforced by convention: routes never import from `db/` or
   buried answers would make every number more meaningful and give the reranker
   a fair test.
 - **Real BM25.** `ts_rank_cd` is cover-density ranking, not BM25 — no
-  term-frequency saturation, different length normalisation. `term_stats` and
-  `corpus_stats` are modelled and populated; the rescoring pass over FTS
-  candidates is the remaining work.
+  term-frequency saturation, different length normalisation. `corpus_stats`
+  (chunk count, average length) is populated at ingestion and the
+  `term_stats` table exists; filling term frequencies and the rescoring pass
+  over FTS candidates are the remaining work.
 - **Query rewriting**, measured against the same fixed dataset.
 - **OpenSearch**, when the corpus outgrows a single Postgres. One new
   `Retriever`.

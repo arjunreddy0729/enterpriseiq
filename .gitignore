@@ -43,7 +43,7 @@ models/
 evaluation/results/scratch/
 evaluation/results/*.tmp.json
 
-# --- Node / frontend (Week 2) ----------------------------------------------
+# --- Node / frontend ---------------------------------------------------
 node_modules/
 .next/
 out/

@@ -12,7 +12,7 @@ then re-checked in application code (filters.enforce_access) as a second,
 independent control; in normal operation it removes nothing.
 
 The candidate counts are deliberate. Cheap retrievers cast a wide net to buy
-*recall*; the expensive cross-encoder that arrives in V2 narrows it to buy
+*recall*; the expensive cross-encoder, when enabled, narrows it to buy
 *precision*. Retrieving only 20 and reranking to 6 would cap the reranker's
 ceiling at whatever the cheap retrievers already ranked in the top 20 - it can
 reorder that set but it cannot rescue anything from position 34.

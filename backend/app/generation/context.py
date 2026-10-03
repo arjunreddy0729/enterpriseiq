@@ -37,10 +37,6 @@ class ContextBlock:
     number: int
     candidate: Candidate
 
-    @property
-    def citation_label(self) -> str:
-        return f"[{self.number}]"
-
 
 @dataclass(slots=True)
 class ContextBundle:

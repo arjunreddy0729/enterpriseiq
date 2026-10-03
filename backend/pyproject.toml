@@ -31,8 +31,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Local embedding + reranking models. NOT installed in the Step 1 image -
-# torch is ~800MB and we do not need it until Saturday's ingestion work.
+# Local embedding + reranking models. torch is large, so this is an extra:
+# the CI lint job and anything that never embeds can skip it.
 # To enable: change the Dockerfile install line to ".[ml,dev]" and rebuild.
 ml = [
     "sentence-transformers>=3.3.0",

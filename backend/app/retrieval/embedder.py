@@ -63,10 +63,6 @@ class BGEEmbedder:
     def query_prefix(self) -> str:
         return self._query_prefix
 
-    @property
-    def is_loaded(self) -> bool:
-        return self._model is not None
-
     def _load(self) -> SentenceTransformer:
         if self._model is not None:
             return self._model
@@ -104,11 +100,6 @@ class BGEEmbedder:
         """Embed one query, with the BGE instruction prefix applied."""
         return self._encode([f"{self._query_prefix}{text}"])[0]
 
-    def embed_queries(self, texts: list[str]) -> np.ndarray:
-        if not texts:
-            return np.empty((0, self._dimension), dtype=np.float32)
-        return self._encode([f"{self._query_prefix}{t}" for t in texts])
-
     def _encode(self, texts: list[str]) -> np.ndarray:
         model = self._load()
         vectors = model.encode(
@@ -121,41 +112,6 @@ class BGEEmbedder:
             show_progress_bar=False,
         )
         return np.asarray(vectors, dtype=np.float32)
-
-
-class DeterministicEmbedder:
-    """A fake embedder for tests. Never used in the running system.
-
-    Hashes text into a stable pseudo-random unit vector. Nearest-neighbour
-    results are meaningless, which is the point: tests that use this are
-    testing plumbing, permissions and SQL, not retrieval quality. Anything
-    claiming to measure retrieval quality must use the real model.
-    """
-
-    def __init__(self, dimension: int | None = None) -> None:
-        self._dimension = dimension or get_settings().embedding_dim
-
-    @property
-    def model_name(self) -> str:
-        return "deterministic-test-embedder"
-
-    @property
-    def dimension(self) -> int:
-        return self._dimension
-
-    def _vector(self, text: str) -> np.ndarray:
-        seed = abs(hash(text)) % (2**32)
-        rng = np.random.default_rng(seed)
-        vector = rng.standard_normal(self._dimension).astype(np.float32)
-        return vector / np.linalg.norm(vector)
-
-    def embed_documents(self, texts: list[str]) -> np.ndarray:
-        if not texts:
-            return np.empty((0, self._dimension), dtype=np.float32)
-        return np.vstack([self._vector(t) for t in texts])
-
-    def embed_query(self, text: str) -> np.ndarray:
-        return self._vector(text)
 
 
 _default: Any = None

@@ -44,13 +44,6 @@ class Identity:
     def is_admin(self) -> bool:
         return self.role == "admin"
 
-    def to_log_context(self) -> dict[str, object]:
-        return {
-            "user_id": str(self.user_id),
-            "email": self.email,
-            "groups": list(self.group_names),
-        }
-
 
 def resolve_identity(session: Session, email: str) -> Identity:
     """Look up a user and their groups.
