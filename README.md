@@ -377,7 +377,7 @@ python -m scripts.compare_eval before.json after.json
 | Auth | PyJWT (HS256) + stdlib scrypt | no hosted identity provider; free and local |
 | Generation | Claude via the Anthropic SDK | the only paid component |
 | Migrations | Alembic | |
-| Tests | pytest — **742 passing**, incl. 300-case leak suite | |
+| Tests | pytest — **765 passing**, incl. 300-case leak suite | |
 
 **No LangChain or LlamaIndex.** Not dogma: hybrid retrieval, fusion, ACL
 enforcement, citation resolution and grounding *are* this project. Behind a
@@ -481,8 +481,8 @@ python -m scripts.show_chunks ../corpus/engineering/authentication.md
 from the request log, per-visitor rate limits, read-only admin endpoints,
 hidden visitor queries in the audit trail, and a landing page with demo
 logins. Pushing to `main` runs CI and, if it passes, redeploys a free Hugging
-Face Gradio Space backed by a free Neon Postgres: a small web page where
-visitors ask as different employees, plus the full API. Setup and a local rehearsal of a
+Face Gradio Space, with Postgres and pgvector running inside it: a small web
+page where visitors ask as different employees, plus the full API. Setup and a local rehearsal of a
 first deploy are in [`docs/deploy.md`](docs/deploy.md).
 
 ### The demo corpus

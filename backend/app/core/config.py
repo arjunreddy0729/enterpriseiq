@@ -126,6 +126,10 @@ class Settings(BaseSettings):
     postgres_db: str = "enterpriseiq"
     #: "require" for hosted Postgres such as Neon or Supabase. Unset locally.
     postgres_sslmode: str | None = None
+    #: A complete connection URL, used instead of the POSTGRES_* parts when
+    #: set. The public demo's embedded Postgres listens on a Unix socket, which
+    #: host/port fields cannot express: postgresql://user@/db?host=/tmp/dir
+    database_url_override: SecretStr | None = Field(default=None, alias="DATABASE_URL")
     db_echo: bool = False
     db_pool_size: int = 5
     db_max_overflow: int = 10
@@ -261,6 +265,12 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         """SQLAlchemy URL using psycopg 3 (`postgresql+psycopg://`)."""
+        if self.database_url_override is not None:
+            url = self.database_url_override.get_secret_value()
+            for prefix in ("postgresql://", "postgres://"):
+                if url.startswith(prefix):
+                    return "postgresql+psycopg://" + url[len(prefix) :]
+            return url
         password = quote_plus(self.postgres_password.get_secret_value())
         user = quote_plus(self.postgres_user)
         url = (
@@ -272,6 +282,8 @@ class Settings(BaseSettings):
     @property
     def safe_database_url(self) -> str:
         """Same URL with the password masked - safe to log."""
+        if self.database_url_override is not None:
+            return "DATABASE_URL (not logged)"
         user = quote_plus(self.postgres_user)
         return (
             f"postgresql+psycopg://{user}:***"

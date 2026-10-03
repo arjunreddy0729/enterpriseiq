@@ -3,9 +3,9 @@
 A Gradio Space runs `python app.py`. This file:
 
 1. sets demo-safe defaults (Space secrets override any of them),
-2. prepares the database: migrations, demo users, and corpus ingestion, which
-   skips unchanged documents, so a restart takes seconds,
-3. serves the FastAPI app (API and /docs) with a small Gradio UI mounted at
+2. starts Postgres inside the Space (see start_embedded_postgres),
+3. prepares the database: migrations, demo users, and corpus ingestion,
+4. serves the FastAPI app (API and /docs) with a small Gradio UI mounted at
    /demo, on the one port the Space exposes.
 
 The UI is layout only. What its buttons do lives in backend/app/web/demo_ui.py,
@@ -35,6 +35,7 @@ DEFAULTS = {
     "CORPUS_DIR": str(ROOT / "corpus"),
     "DEMO_UI_PATH": "/demo",
     "SEED_ON_STARTUP": "true",
+    "EMBEDDED_POSTGRES": "true",
 }
 for key, value in DEFAULTS.items():
     os.environ.setdefault(key, value)
@@ -52,6 +53,31 @@ def _run(*args: str, attempts: int = 1) -> None:
             print(f"[startup] {' '.join(args)} failed, retrying ({attempt}/{attempts})", flush=True)
             time.sleep(5)
     raise SystemExit(f"[startup] {' '.join(args)} failed; see the logs above")
+
+
+def start_embedded_postgres():  # type: ignore[no-untyped-def]
+    """Run Postgres (with pgvector) inside the Space, from the pgserver wheel.
+
+    Free Spaces could not reach an external database: connections to Supabase
+    on 5432 timed out at startup. An embedded server needs no network and no
+    account. The trade-off is that its data lives on the Space's disk, which
+    is wiped on restart, so every start rebuilds it: migrations, demo users
+    and corpus ingestion all run again, and the audit trail starts empty.
+    Set EMBEDDED_POSTGRES=false and the POSTGRES_* secrets to use an external
+    database instead.
+    """
+    if os.environ.get("EMBEDDED_POSTGRES", "true").lower() != "true":
+        return None
+    import pgserver
+
+    data_dir = Path(os.environ.get("EMBEDDED_POSTGRES_DIR", str(ROOT / ".pgdata")))
+    data_dir.mkdir(parents=True, exist_ok=True)
+    print(f"[startup] starting embedded Postgres in {data_dir}", flush=True)
+    server = pgserver.get_server(data_dir, cleanup_mode="stop")
+    # Inherited by the migration, seed and ingest subprocesses, and read by
+    # Settings in this process: DATABASE_URL replaces the POSTGRES_* parts.
+    os.environ["DATABASE_URL"] = server.get_uri()
+    return server
 
 
 def prepare_database() -> None:
@@ -133,6 +159,8 @@ def build_ui():  # type: ignore[no-untyped-def]
 
 
 def main() -> None:
+    # Kept referenced for the life of the process; the server stops on exit.
+    database = start_embedded_postgres()  # noqa: F841
     prepare_database()
 
     import gradio as gr

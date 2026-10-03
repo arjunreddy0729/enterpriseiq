@@ -146,6 +146,35 @@ class VectorRetriever:
         degrades first and most, which is the worst possible failure mode for
         a permission-aware system.
         """
-        self._session.execute(text("SET LOCAL hnsw.iterative_scan = relaxed_order"))
         self._session.execute(text(f"SET LOCAL hnsw.ef_search = {_HNSW_EF_SEARCH}"))
-        self._session.execute(text(f"SET LOCAL hnsw.max_scan_tuples = {_HNSW_MAX_SCAN_TUPLES}"))
+        if _supports_iterative_scan(self._session):
+            self._session.execute(text("SET LOCAL hnsw.iterative_scan = relaxed_order"))
+            self._session.execute(text(f"SET LOCAL hnsw.max_scan_tuples = {_HNSW_MAX_SCAN_TUPLES}"))
+
+
+#: Iterative scans arrived in pgvector 0.8. The public demo runs an embedded
+#: Postgres whose bundled pgvector is 0.6, where setting the option is an
+#: error. Checked once per process; the extension version cannot change under
+#: a running app.
+_iterative_scan_supported: bool | None = None
+
+
+def _supports_iterative_scan(session: Session) -> bool:
+    global _iterative_scan_supported
+    if _iterative_scan_supported is None:
+        version = session.execute(
+            text("SELECT extversion FROM pg_extension WHERE extname = 'vector'")
+        ).scalar_one_or_none()
+        _iterative_scan_supported = pgvector_at_least(version, (0, 8))
+    return _iterative_scan_supported
+
+
+def pgvector_at_least(version: str | None, minimum: tuple[int, int]) -> bool:
+    """Compare an extversion string such as '0.8.0' or '0.6.2'."""
+    if not version:
+        return False
+    try:
+        major, minor = (int(part) for part in version.split(".")[:2])
+    except ValueError:
+        return False
+    return (major, minor) >= minimum

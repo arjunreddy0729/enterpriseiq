@@ -12,6 +12,14 @@ from app.core.config import (
 )
 
 
+@pytest.fixture(autouse=True)
+def _no_database_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    """DATABASE_URL replaces the POSTGRES_* parts these tests build URLs from,
+    so a value in the environment (as in a run against the embedded demo
+    database) must not leak in."""
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+
+
 def make_settings(**overrides: object) -> Settings:
     """Build Settings ignoring any .env on the machine running the tests."""
     return Settings(_env_file=None, **overrides)  # type: ignore[arg-type]
@@ -114,3 +122,33 @@ def test_pasted_whitespace_is_stripped_from_settings(monkeypatch: pytest.MonkeyP
     assert settings.anthropic_api_key is not None
     assert settings.anthropic_api_key.get_secret_value() == "sk-ant-api03-abc123"
     assert settings.embedding_query_prefix.endswith(": "), "BGE prefix keeps its one space"
+
+
+def test_database_url_override_wins_and_uses_psycopg(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The demo's embedded Postgres is reached over a Unix socket, which only
+    a full URL can express."""
+    from app.core.config import Settings
+
+    monkeypatch.setenv("DATABASE_URL", "postgresql://postgres:@/postgres?host=/tmp/pg")
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
+    assert settings.database_url == "postgresql+psycopg://postgres:@/postgres?host=/tmp/pg"
+    assert "tmp/pg" not in settings.safe_database_url
+
+
+@pytest.mark.parametrize(
+    ("version", "expected"),
+    [
+        ("0.8.0", True),
+        ("0.10.1", True),
+        ("1.0", True),
+        ("0.7.4", False),
+        ("0.6.2", False),
+        (None, False),
+        ("", False),
+        ("dev", False),
+    ],
+)
+def test_pgvector_version_gate(version: str | None, expected: bool) -> None:
+    from app.retrieval.vector import pgvector_at_least
+
+    assert pgvector_at_least(version, (0, 8)) is expected

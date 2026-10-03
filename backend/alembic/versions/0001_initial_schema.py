@@ -40,8 +40,20 @@ def upgrade() -> None:
     # ------------------------------------------------------------------
     # pgvector must exist before any vector column is declared.
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
-    # pg_trgm is not used yet; it lands with fuzzy title matching in V2.
-    op.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
+    # pg_trgm is not used yet (it is for future fuzzy title matching), so it is
+    # created only where available. The embedded Postgres used by the public
+    # demo does not ship it. Equivalent to the original statement everywhere
+    # the extension exists, so already-migrated databases are unaffected.
+    op.execute(
+        """
+        DO $$
+        BEGIN
+            IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'pg_trgm') THEN
+                CREATE EXTENSION IF NOT EXISTS pg_trgm;
+            END IF;
+        END $$
+        """
+    )
 
     # ------------------------------------------------------------------
     # Identity & access control
