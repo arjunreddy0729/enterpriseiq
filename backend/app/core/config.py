@@ -195,6 +195,21 @@ class Settings(BaseSettings):
     corpus_dir: Path = Field(default=REPO_ROOT / "corpus")
     seed_on_startup: bool = True
 
+    @model_validator(mode="before")
+    @classmethod
+    def _strip_surrounding_whitespace(cls, data: object) -> object:
+        """Drop spaces and newlines around every value, secrets included.
+
+        Values pasted into a hosting dashboard often carry a stray trailing
+        space or newline, and nothing here is valid with one: a host, an API
+        key, `sslmode=require ` (which Postgres rejects, and which took the
+        first public deploy down). The BGE query prefix needs its trailing
+        space, which _normalise_prefix adds back.
+        """
+        if isinstance(data, dict):
+            return {k: v.strip() if isinstance(v, str) else v for k, v in data.items()}
+        return data
+
     @field_validator("log_level")
     @classmethod
     def _upper_log_level(cls, value: str) -> str:

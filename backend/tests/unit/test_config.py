@@ -98,3 +98,18 @@ class TestCorsOrigins:
     def test_splits_and_strips(self) -> None:
         settings = make_settings(cors_allow_origins="http://a.test, http://b.test ,")
         assert settings.cors_origins == ["http://a.test", "http://b.test"]
+
+
+def test_pasted_whitespace_is_stripped_from_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A trailing space in POSTGRES_SSLMODE took the first public deploy down."""
+    from app.core.config import Settings
+
+    monkeypatch.setenv("POSTGRES_SSLMODE", "require ")
+    monkeypatch.setenv("POSTGRES_HOST", " db.example.com\n")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-api03-abc123 \n")
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
+
+    assert settings.database_url.endswith("@db.example.com:5433/enterpriseiq?sslmode=require")
+    assert settings.anthropic_api_key is not None
+    assert settings.anthropic_api_key.get_secret_value() == "sk-ant-api03-abc123"
+    assert settings.embedding_query_prefix.endswith(": "), "BGE prefix keeps its one space"
