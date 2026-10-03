@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import datetime as dt
 
+import pytest
+
 from app.generation.citations import resolve
 from app.generation.confidence import (
     Confidence,
@@ -192,3 +194,29 @@ def test_explanation_names_the_weakness() -> None:
 def test_no_percentage_is_ever_produced() -> None:
     """A percentage asserts calibration this system cannot demonstrate."""
     assert {c.value for c in Confidence} == {"high", "medium", "low"}
+
+
+@pytest.mark.parametrize(
+    ("model", "expected"),
+    [
+        ("claude-opus-5", True),
+        ("claude-opus-5-5", True),
+        ("claude-sonnet-5-5", True),
+        ("claude-fable-5-1", True),
+        ("claude-opus-4-8", True),
+        ("claude-opus-4-5", True),
+        ("claude-sonnet-4-6", True),
+        ("claude-haiku-4-5", False),
+        ("claude-haiku-4-5-20251001", False),
+        ("claude-sonnet-4-5", False),
+        ("claude-sonnet-4-20250514", False),
+        ("claude-opus-4-1", False),
+        ("claude-3-5-haiku-latest", False),
+    ],
+)
+def test_effort_is_sent_only_to_models_that_accept_it(model: str, expected: bool) -> None:
+    """Haiku 4.5 rejects output_config.effort with a 400; the public demo
+    runs on it, and every answer failed until this was gated."""
+    from app.generation.llm import supports_effort
+
+    assert supports_effort(model) is expected

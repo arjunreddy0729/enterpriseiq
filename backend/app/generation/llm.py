@@ -60,6 +60,26 @@ class LLMClient(Protocol):
     def complete(self, system: str, user: str) -> Completion: ...
 
 
+#: Model families that reject `output_config.effort` with a 400. Effort
+#: arrived with Opus 4.5; Haiku 4.5, Sonnet 4.5 and everything older lack it.
+#: Listing the exceptions rather than the supporters means a newly released
+#: model gets effort without a code change.
+_NO_EFFORT_PREFIXES = (
+    "claude-haiku-",
+    "claude-3",
+    "claude-sonnet-4-5",
+    "claude-sonnet-4-0",
+    "claude-sonnet-4-2",  # claude-sonnet-4-20250514
+    "claude-opus-4-0",
+    "claude-opus-4-1",
+    "claude-opus-4-2",  # claude-opus-4-20250514
+)
+
+
+def supports_effort(model: str) -> bool:
+    return not model.startswith(_NO_EFFORT_PREFIXES)
+
+
 class AnthropicClient:
     """Claude via the official SDK."""
 
@@ -104,16 +124,20 @@ class AnthropicClient:
         client = self._sdk()
         started = time.perf_counter()
 
+        request: dict[str, Any] = {
+            "model": self._model,
+            "max_tokens": self._max_tokens,
+            "system": system,
+            "messages": [{"role": "user", "content": user}],
+        }
+        # Effort, not temperature: sampling parameters are rejected on the
+        # newer models. Older ones reject effort instead, so it is sent only
+        # where it is accepted.
+        if supports_effort(self._model):
+            request["output_config"] = {"effort": self._effort}
+
         try:
-            response = client.messages.create(
-                model=self._model,
-                max_tokens=self._max_tokens,
-                system=system,
-                messages=[{"role": "user", "content": user}],
-                # Effort, not temperature. Sampling parameters are rejected on
-                # this model family.
-                output_config={"effort": self._effort},
-            )
+            response = client.messages.create(**request)
         except anthropic.APIStatusError as exc:
             logger.error("llm_api_error", status=exc.status_code, message=str(exc))
             raise
