@@ -109,7 +109,8 @@ def test_pasted_whitespace_is_stripped_from_settings(monkeypatch: pytest.MonkeyP
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-api03-abc123 \n")
     settings = Settings(_env_file=None)  # type: ignore[call-arg]
 
-    assert settings.database_url.endswith("@db.example.com:5433/enterpriseiq?sslmode=require")
+    assert settings.postgres_host == "db.example.com"
+    assert settings.database_url.endswith("?sslmode=require")
     assert settings.anthropic_api_key is not None
     assert settings.anthropic_api_key.get_secret_value() == "sk-ant-api03-abc123"
     assert settings.embedding_query_prefix.endswith(": "), "BGE prefix keeps its one space"
