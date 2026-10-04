@@ -25,6 +25,23 @@ Space, which rebuilds. Never edit the Space directly: each deploy overwrites it.
 > period without visitors and takes a minute or two to wake. Check before
 > relying on it.
 
+## How the Space serves the app
+
+A free Space already holds port 7860 when `app.py` runs, so starting uvicorn
+directly fails with "address already in use". `app.py` instead builds the
+whole FastAPI app on Gradio's `gr.Server` (a FastAPI subclass) via
+`configure_app`, mounts the demo page at `/demo`, and lets Gradio start it
+with `launch()`, which picks the port the Space expects. Two consequences,
+both handled in `main()`:
+
+- `launch()` replaces an app's lifespan with Gradio's own. The lifespan that
+  `mount_gradio_app` set up (which starts the page's queue worker and runs
+  ours) is passed back through `app_kwargs={"lifespan": ...}`; without it,
+  every button click waits in the queue forever.
+- ZeroGPU reports the app's `@spaces.GPU` functions from a hook on
+  `Blocks.launch()`, which `gr.Server.launch()` goes through. The app uses no
+  GPU, so it declares one never-called placeholder to pass that check.
+
 ## Why the database runs inside the Space
 
 The first deploys pointed the Space at a hosted Postgres (Supabase, session
@@ -122,7 +139,7 @@ cp deploy/huggingface/app.py deploy/huggingface/requirements.txt deploy/huggingf
 cd "$site" && EMBEDDED_POSTGRES_DIR=/tmp/space-pg \
   JWT_SECRET=local-rehearsal-secret-at-least-32-characters \
   DEMO_USER_PASSWORD=northwind-demo LLM_DAILY_BUDGET_USD=0.50 \
-  ANTHROPIC_MODEL=claude-haiku-4-5 FORWARDED_PROXY_HOPS=0 PORT=7863 \
+  ANTHROPIC_MODEL=claude-haiku-4-5 FORWARDED_PROXY_HOPS=0 GRADIO_SERVER_PORT=7863 \
   ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
   /tmp/space-venv/bin/python app.py
 # then open http://localhost:7863

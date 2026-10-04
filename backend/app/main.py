@@ -10,6 +10,7 @@ import time
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import Depends, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -55,24 +56,38 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("shutdown")
 
 
-def create_app() -> FastAPI:
-    settings = get_settings()
+def app_options() -> dict[str, Any]:
+    """Constructor arguments for the application object.
 
-    app = FastAPI(
-        title=settings.app_name,
-        version=settings.app_version,
-        description=(
+    Separate from configure_app so the same app can be built on a different
+    FastAPI subclass: the public demo builds it on Gradio's gr.Server, which
+    is a FastAPI app that Gradio itself starts (see deploy/huggingface/app.py).
+    """
+    settings = get_settings()
+    return {
+        "title": settings.app_name,
+        "version": settings.app_version,
+        "description": (
             "Permission-aware enterprise RAG platform. "
             "Hybrid retrieval (BM25 + dense vectors) with reciprocal rank fusion, "
             "ACL enforcement inside the retrieval query, and citation-grounded generation. "
             "Authenticate with POST /api/v1/auth/token; admins manage ACLs and read the "
             "audit trail under /api/v1/admin."
         ),
-        lifespan=lifespan,
-        docs_url="/docs",
-        redoc_url=None,
-        openapi_url="/openapi.json",
-    )
+        "lifespan": lifespan,
+        "docs_url": "/docs",
+        "redoc_url": None,
+        "openapi_url": "/openapi.json",
+    }
+
+
+def create_app() -> FastAPI:
+    return configure_app(FastAPI(**app_options()))
+
+
+def configure_app(app: FastAPI) -> FastAPI:
+    """Middleware, error handling and routes, on any FastAPI app."""
+    settings = get_settings()
 
     app.add_middleware(
         CORSMiddleware,
