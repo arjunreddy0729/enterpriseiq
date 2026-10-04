@@ -23,5 +23,7 @@ anthropic>=0.40.0
 pyjwt>=2.9.0
 # Postgres 16 + pgvector as a wheel, run inside the Space (see app.py).
 pgserver>=0.1.4
+# ZeroGPU's @spaces.GPU marker (see app.py). Preinstalled on ZeroGPU Spaces.
+spaces
 sentence-transformers>=3.3.0
 transformers>=4.46.0

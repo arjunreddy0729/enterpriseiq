@@ -16,11 +16,25 @@ deploy workflow overwrites the Space on every push.
 # No `from __future__ import annotations` here: Gradio finds which handler
 # argument should receive the request by reading its `gr.Request` annotation,
 # and a string annotation naming a locally imported module cannot be resolved.
-import os
-import subprocess
-import sys
-import time
-from pathlib import Path
+
+# Free Gradio Spaces run on ZeroGPU, which refuses to start an app that has no
+# @spaces.GPU function ("No @spaces.GPU function detected during startup").
+# This app never uses a GPU, so it declares one placeholder that is never
+# called. `spaces` must be imported before anything imports torch. Off
+# Hugging Face the decorator is a no-op.
+import spaces
+
+
+@spaces.GPU
+def _zerogpu_placeholder() -> None:
+    """Never called; satisfies ZeroGPU's startup check."""
+
+
+import os  # noqa: E402
+import subprocess  # noqa: E402
+import sys  # noqa: E402
+import time  # noqa: E402
+from pathlib import Path  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent
 BACKEND = ROOT / "backend"
