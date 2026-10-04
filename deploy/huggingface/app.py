@@ -30,6 +30,28 @@ def _zerogpu_placeholder() -> None:
     """Never called; satisfies ZeroGPU's startup check."""
 
 
+def _report_zerogpu_startup() -> None:
+    """Send ZeroGPU's startup report, which normally rides on Blocks.launch().
+
+    `spaces` hooks gr.Blocks.launch() to report the app's @spaces.GPU
+    functions to the platform. This app serves Gradio through uvicorn (so the
+    API and the page share one server) and never calls launch(), so without
+    this the platform sees no report and stops the Space with "No @spaces.GPU
+    function detected during startup". spaces.zero.startup is the function
+    that hook runs; it exists only on ZeroGPU hardware.
+    """
+    try:
+        from spaces import zero
+    except ImportError:
+        return
+    startup = getattr(zero, "startup", None)
+    if startup is not None:
+        startup()
+
+
+_report_zerogpu_startup()
+
+
 import os  # noqa: E402
 import subprocess  # noqa: E402
 import sys  # noqa: E402
