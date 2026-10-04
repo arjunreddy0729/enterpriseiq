@@ -27,20 +27,28 @@ Space, which rebuilds. Never edit the Space directly: each deploy overwrites it.
 
 ## How the Space serves the app
 
-A free Space already holds port 7860 when `app.py` runs, so starting uvicorn
-directly fails with "address already in use". `app.py` instead builds the
-whole FastAPI app on Gradio's `gr.Server` (a FastAPI subclass) via
-`configure_app`, mounts the demo page at `/demo`, and lets Gradio start it
-with `launch()`, which picks the port the Space expects. Two consequences,
-both handled in `main()`:
+`app.py` builds the whole FastAPI app on Gradio's `gr.Server` (a FastAPI
+subclass) via `configure_app`, mounts the demo page at `/demo`, and lets
+Gradio start it with `launch()`. Three Spaces-specific details, all handled in
+`main()` and reproduced locally before being fixed:
 
-- `launch()` replaces an app's lifespan with Gradio's own. The lifespan that
-  `mount_gradio_app` set up (which starts the page's queue worker and runs
-  ours) is passed back through `app_kwargs={"lifespan": ...}`; without it,
-  every button click waits in the queue forever.
-- ZeroGPU reports the app's `@spaces.GPU` functions from a hook on
-  `Blocks.launch()`, which `gr.Server.launch()` goes through. The app uses no
-  GPU, so it declares one never-called placeholder to pass that check.
+- **Server-side rendering is forced off.** Spaces set `GRADIO_SSR_MODE=true`,
+  which starts a Node proxy on the public port 7860 that answers *every*
+  path, `/healthz` and `/api/v1/*` included, with the page's HTML, while the
+  app runs unreachable on an internal port. That Node proxy is also what
+  held 7860 when an earlier version started uvicorn itself ("address already
+  in use"). `ssr_mode=False` is passed to both `mount_gradio_app` and
+  `launch()`; an explicit argument beats the environment variable.
+- **The page's lifespan is passed back to `launch()`.** `launch()` replaces
+  an app's lifespan with Gradio's own, dropping the one `mount_gradio_app`
+  set up (which starts the page's queue worker and runs ours); without
+  `app_kwargs={"lifespan": ...}` every button click waits forever.
+- **ZeroGPU's check.** ZeroGPU reports the app's `@spaces.GPU` functions from
+  a hook on `Blocks.launch()`, which `gr.Server.launch()` goes through. The app
+  uses no GPU, so it declares one never-called placeholder.
+
+To reproduce the Spaces behaviour locally, set `GRADIO_SSR_MODE=true` in the
+rehearsal below (needs Node.js installed).
 
 ## Why the database runs inside the Space
 

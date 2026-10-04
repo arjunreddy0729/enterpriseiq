@@ -187,12 +187,15 @@ def main() -> None:
     get_embedder().embed_query("warm up")
 
     # The whole API is built on gr.Server, Gradio's FastAPI subclass, and
-    # started by Gradio. A free Space already holds port 7860 when app.py
-    # runs, so starting uvicorn directly fails with "address already in use";
-    # Gradio's launch picks the port the Space expects, and goes through
-    # Blocks.launch(), where ZeroGPU's startup report hooks in.
+    # started by Gradio's launch(), which goes through Blocks.launch(), where
+    # ZeroGPU's startup report hooks in.
     server = configure_app(gr.Server(**app_options()))
-    gr.mount_gradio_app(server, build_ui(), path="/demo")
+    # Server-side rendering off, explicitly: Spaces set GRADIO_SSR_MODE=true,
+    # which puts a Node proxy on the public port that answers every path,
+    # /healthz and /api/v1/* included, with the page's HTML. It is also what
+    # held port 7860 when this app started uvicorn itself. An explicit
+    # argument takes precedence over the environment variable.
+    gr.mount_gradio_app(server, build_ui(), path="/demo", ssr_mode=False)
     # mount_gradio_app starts the page's queue worker by wrapping the app's
     # lifespan (which also runs ours), but launch() replaces an app's
     # lifespan with Gradio's own. Without handing the wrapped one back, button
@@ -201,6 +204,7 @@ def main() -> None:
     server.launch(
         server_name=os.environ.get("GRADIO_SERVER_NAME", "0.0.0.0"),
         app_kwargs={"lifespan": lifespan},
+        ssr_mode=False,
     )
 
 
