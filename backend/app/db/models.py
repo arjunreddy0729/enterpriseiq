@@ -271,21 +271,6 @@ class Chunk(Base):
 # ---------------------------------------------------------------------------
 # BM25 corpus statistics
 # ---------------------------------------------------------------------------
-class TermStat(Base):
-    """Document frequency per term, for the BM25 rescoring pass.
-
-    Postgres full-text search gives us fast, ACL-filterable candidate
-    generation, but ts_rank_cd is NOT BM25 - it has no term-frequency
-    saturation curve and normalises length differently. We regenerate real
-    BM25 scores over the FTS candidate set using these statistics.
-    """
-
-    __tablename__ = "term_stats"
-
-    term: Mapped[str] = mapped_column(Text, primary_key=True)
-    document_frequency: Mapped[int] = mapped_column(Integer, nullable=False)
-
-
 class CorpusStat(Base):
     """Single-row table holding N and avgdl for the BM25 formula."""
 
