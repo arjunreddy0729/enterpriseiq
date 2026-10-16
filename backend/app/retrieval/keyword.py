@@ -13,9 +13,9 @@ worth more than tuning either one.
 
 **On ranking honesty.** This uses `ts_rank_cd`, which is not BM25. It has no
 term-frequency saturation curve and normalises document length differently.
-The corpus statistics needed for real BM25 are already modelled (term_stats,
-corpus_stats) and rescoring the candidate set is a small amount of work - but
-until that lands, this is cover-density ranking and is described as such.
+Real BM25 would mean rescoring the candidate set with per-term document
+frequencies, which this does not collect. Until that lands, this is
+cover-density ranking and is described as such rather than labelled BM25.
 What Postgres FTS does give us today, and an in-memory BM25 index would not,
 is the ACL predicate evaluated inside the same query plan.
 """

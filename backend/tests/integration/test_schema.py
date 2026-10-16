@@ -30,7 +30,6 @@ EXPECTED_TABLES = {
     "documents",
     "document_permissions",
     "chunks",
-    "term_stats",
     "corpus_stats",
     "query_logs",
 }

@@ -9,8 +9,12 @@ Everything runs locally except the answer-generation call to Claude.
 
 ```bash
 cp .env.example .env          # add your ANTHROPIC_API_KEY
-docker compose up --build
+make up                       # Postgres + pgvector, migrations, seed, API
+make ingest                   # load the 22-document demo corpus
 ```
+
+`make` on its own lists every target — `make check` runs exactly what CI runs.
+Without make: `docker compose up --build`.
 
 ---
 
