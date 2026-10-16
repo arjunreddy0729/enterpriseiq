@@ -354,7 +354,7 @@ first or second nearly every time. Recall@3 is already 1.000; there is no
 headroom to recover.
 
 A reranker fixes a *precision* problem. This corpus doesn't have one. Shipping
-it anyway would cost 54× latency for nothing.
+it anyway would cost 55× latency for nothing.
 
 ```bash
 python -m scripts.run_eval                        # retrieval only, free
@@ -388,9 +388,16 @@ Two properties make this a *sync* rather than a one-off import:
 
 - **Unchanged documents cost nothing.** The revision token (a git blob SHA, an
   ETag, an mtime) is compared before anything is downloaded, parsed or
-  embedded. Re-syncing the 22-document corpus takes **148ms**, against ~20s for
-  a full re-ingest. A GitHub repo costs two API calls to list, then one call
-  per *changed* file.
+  embedded. Same command, same corpus, change detection off vs on:
+
+  | | |
+  |---|---:|
+  | `sync_source local --force` (re-embed everything) | 25,781 ms |
+  | `sync_source local` (all 22 unchanged) | **144 ms** |
+
+  The gap is larger for a remote source, where the token also saves a network
+  download per file: an unchanged GitHub repo costs two API calls and zero
+  downloads.
 - **Deleting at the source deletes here.** Documents the source no longer has
   have their chunks removed immediately and the row marked deleted for the
   audit trail. A file taken down for a reason that still answers questions is
@@ -621,6 +628,13 @@ Routes stay thin: validate, authenticate, delegate. The work lives in
 >   GIN-indexed array predicate rather than as a post-filter — achieving
 >   **recall@3 = 1.00** and **MRR = 0.98** with **zero permission leaks** across
 >   a 34-question benchmark.
+> - Built a source-connector layer that maps each source's own access control
+>   into the permission model — a required, no-default `access_groups` field, so
+>   a source that has not decided its audience fails at the boundary rather than
+>   indexing silently. Revision-token incremental sync cuts an unchanged re-sync
+>   from **25.8s to 144ms**, and deletion propagation removes a document from the
+>   index the moment the source drops it. Verified against a live GitHub
+>   repository: two sources, one index, permissions enforced across both.
 > - Implemented server-assigned citation IDs with post-hoc validation, so
 >   fabricated sources are structurally impossible, plus deterministic grounding
 >   verification and two-stage abstention — **100% abstention accuracy** (11/11
@@ -633,8 +647,9 @@ Routes stay thin: validate, authenticate, delegate. The work lives in
 >   testing showing each permission layer blocks every case on its own.
 > - Built an automated evaluation harness measuring Recall@K, Precision@K, MRR,
 >   nDCG@K, citation precision, grounding and cost; used it to measure that a
->   cross-encoder reranker delivered **no metric improvement for 54× latency**
+>   cross-encoder reranker delivered **no metric improvement for 55× latency**
 >   on this corpus, and shipped it disabled.
 
 Every number above is reproducible: `python -m scripts.run_eval --full` for the
-benchmark, `pytest tests/security` for the leak suite.
+benchmark, `pytest tests/security` for the leak suite, and
+`python -m scripts.sync_source local [--force]` for the sync timings.
