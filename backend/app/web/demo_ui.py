@@ -14,23 +14,20 @@ spend cap (both inside QueryService), and the request log the audit reads.
 
 from __future__ import annotations
 
-import time
 import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass
 
 from app.api.errors import BudgetExhaustedError, ConfigurationError
-from app.api.routes.search import _log_search
 from app.core.config import get_settings
 from app.core.identity import Identity, resolve_identity
 from app.core.rate_limit import address_from, limiter
 from app.db.session import SessionLocal
 from app.generation.llm import AnthropicClient, LLMClient
 from app.retrieval.embedder import get_embedder
-from app.retrieval.pipeline import HybridRetrievalPipeline
 from app.retrieval.types import Candidate, Filters
-from app.schemas.search import SearchRequest
 from app.services.query_service import QueryOutcome, QueryService
+from app.services.search_service import SearchService
 
 #: Label shown in the UI -> seeded demo account.
 PERSONAS: dict[str, str] = {
@@ -105,21 +102,12 @@ def search(persona: str, question: str, visitor: str) -> DemoResult:
         if wait is not None:
             return DemoResult(f"⏳ Too many searches. Try again in {int(wait) + 1}s.", "", "")
 
-    started = time.perf_counter()
     with SessionLocal() as session:
         identity = resolve_identity(session, PERSONAS[persona])
-        result = HybridRetrievalPipeline(session, get_embedder()).retrieve(
-            text=question.strip(), allowed_group_ids=identity.group_ids, top_k=5
-        )
-        took_ms = int((time.perf_counter() - started) * 1000)
-        _log_search(
-            session,
-            f"ui-{uuid.uuid4()}",
-            identity,
-            SearchRequest(query=question.strip(), top_k=5),
-            result,
-            took_ms,
-        )
+        service = SearchService(session, get_embedder())
+        result = service.search(query=question.strip(), identity=identity, top_k=5)
+        took_ms = result.took_ms
+        service.log(f"ui-{uuid.uuid4()}", identity, question.strip(), Filters(), result)
 
     answer = (
         f"🔎 **{len(result.candidates)} passages** that {_first_name(persona)} is allowed to "

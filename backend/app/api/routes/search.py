@@ -14,19 +14,10 @@ assert against it, and every "why did it say that?" investigation starts here.
 
 from __future__ import annotations
 
-import time
-
-from fastapi import APIRouter, Request
-from sqlalchemy.orm import Session
+from fastapi import APIRouter
 
 from app.api.dependencies import EmbedderDep, IdentityDep, SessionDep
-from app.core.identity import Identity
 from app.core.logging import get_logger, request_id_var
-from app.db.models import QueryLog
-from app.retrieval.filters import describe
-from app.retrieval.keyword import KeywordRetriever
-from app.retrieval.pipeline import HybridRetrievalPipeline
-from app.retrieval.types import Filters, RetrievalQuery
 from app.schemas.search import (
     IdentitySummary,
     SearchDebug,
@@ -34,6 +25,7 @@ from app.schemas.search import (
     SearchResponse,
     SearchResult,
 )
+from app.services.search_service import SearchService
 
 logger = get_logger(__name__)
 
@@ -47,49 +39,29 @@ router = APIRouter(tags=["search"])
 )
 def search(
     payload: SearchRequest,
-    request: Request,
     session: SessionDep,
     identity: IdentityDep,
     embedder: EmbedderDep,
 ) -> SearchResponse:
-    started = time.perf_counter()
     # From the contextvar the middleware set, NOT from the inbound header.
     # Reading the request header only works when the *client* supplied an id;
     # for everyone else it returned "" and the response - and the query_logs
     # row, and the log lines - had nothing to correlate on. The request id is
     # the thread that ties a bad answer back to the evidence that produced it,
     # so it must always be present.
-    request_id = request_id_var.get() or request.headers.get("X-Request-ID", "")
+    request_id = request_id_var.get() or ""
 
-    filters: Filters = payload.filters.to_domain() if payload.filters is not None else Filters()
+    filters = payload.filters.to_domain() if payload.filters is not None else None
+    service = SearchService(session, embedder)
 
-    pipeline = HybridRetrievalPipeline(session, embedder)
-    result = pipeline.retrieve(
-        text=payload.query,
-        # The only source of access groups is the authenticated identity.
-        # Nothing in SearchRequest can influence this.
-        allowed_group_ids=identity.group_ids,
+    outcome = service.search(
+        query=payload.query,
+        identity=identity,
         filters=filters,
         top_k=payload.top_k,
+        include_debug=payload.include_debug,
     )
-
-    took_ms = int((time.perf_counter() - started) * 1000)
-    results = [SearchResult.from_candidate(c) for c in result.candidates]
-
-    debug: SearchDebug | None = None
-    if payload.include_debug:
-        probe = RetrievalQuery(
-            text=payload.query,
-            allowed_group_ids=identity.group_ids,
-            filters=filters,
-        )
-        debug = SearchDebug(
-            **result.to_debug(),
-            filters=describe(probe),
-            tsquery=KeywordRetriever(session).explain(probe).get("tsquery"),
-        )
-
-    _log_search(session, request_id, identity, payload, result, took_ms)
+    service.log(request_id, identity, payload.query, filters or _empty_filters(), outcome)
 
     return SearchResponse(
         request_id=request_id,
@@ -97,52 +69,14 @@ def search(
         identity=IdentitySummary(
             email=identity.email, name=identity.name, groups=list(identity.group_names)
         ),
-        result_count=len(results),
-        results=results,
-        took_ms=took_ms,
-        debug=debug,
+        result_count=outcome.result_count,
+        results=[SearchResult.from_candidate(c) for c in outcome.candidates],
+        took_ms=outcome.took_ms,
+        debug=SearchDebug(**outcome.debug) if outcome.debug else None,
     )
 
 
-def _log_search(
-    session: Session,
-    request_id: str,
-    identity: Identity,
-    payload: SearchRequest,
-    result: object,
-    took_ms: int,
-) -> None:
-    """Record the request so a bad result can be reconstructed later.
+def _empty_filters():  # type: ignore[no-untyped-def]
+    from app.retrieval.types import Filters
 
-    Best-effort: a logging failure must never fail the user's search.
-    """
-    try:
-        candidates = getattr(result, "candidates", [])
-        session.add(
-            QueryLog(
-                request_id=request_id or "unknown",
-                user_id=identity.user_id,
-                endpoint="search",
-                query=payload.query,
-                filters=describe(
-                    RetrievalQuery(
-                        text=payload.query,
-                        allowed_group_ids=identity.group_ids,
-                        filters=(
-                            payload.filters.to_domain()
-                            if payload.filters is not None
-                            else Filters()
-                        ),
-                    )
-                ),
-                candidates=[c.to_log_entry() for c in candidates],
-                used_chunk_ids=[c.chunk_id for c in candidates],
-                retrieved_document_ids=list(dict.fromkeys(c.document_id for c in candidates)),
-                latency_ms={**getattr(result, "timings_ms", {}), "total": took_ms},
-                status="retrieval_only",
-            )
-        )
-        session.commit()
-    except Exception:
-        logger.warning("query_log_write_failed", exc_info=True)
-        session.rollback()
+    return Filters()
