@@ -364,6 +364,60 @@ python -m scripts.compare_eval before.json after.json
 
 ---
 
+## Connecting real sources
+
+The demo corpus is a folder, but ingestion is written against a `Connector`
+contract, not a filesystem. A connector answers three questions per document,
+and the third is what makes this an enterprise problem rather than a scraping
+one:
+
+    1. What is it?        title, type, metadata
+    2. Has it changed?    a revision token
+    3. Who may read it?   access groups, mapped from the source's own ACLs
+
+`access_groups` is required with no default. A source that has not decided who
+may read a document fails at the boundary rather than quietly indexing it —
+the same rule as `RetrievalQuery.allowed_group_ids`.
+
+```bash
+python -m scripts.sync_source local
+python -m scripts.sync_source github --repo owner/name --groups engineering --include docs/
+```
+
+Two properties make this a *sync* rather than a one-off import:
+
+- **Unchanged documents cost nothing.** The revision token (a git blob SHA, an
+  ETag, an mtime) is compared before anything is downloaded, parsed or
+  embedded. Re-syncing the 22-document corpus takes **148ms**, against ~20s for
+  a full re-ingest. A GitHub repo costs two API calls to list, then one call
+  per *changed* file.
+- **Deleting at the source deletes here.** Documents the source no longer has
+  have their chunks removed immediately and the row marked deleted for the
+  audit trail. A file taken down for a reason that still answers questions is
+  the same failure as a permission leak.
+
+Measured end to end against a real repository — two sources in one index, with
+permissions enforced across both:
+
+```
+index:  local-corpus                 22 docs, 264 chunks
+        github:<owner>/<repo>         2 docs,  12 chunks
+
+Q: "how does the public demo get deployed to a Space?"
+   Priya (engineering)   3 results, 3 from GitHub
+   Marcus (HR)           3 results, 0 from GitHub
+```
+
+GitHub grants read access per repository, so the operator maps a repo to
+groups and the connector refuses to guess. It does read the repo's visibility
+and warns when a private repo is mapped company-wide, because that is the
+mapping most likely to be an accident.
+
+**What is not built:** SharePoint, Confluence and Drive. Each needs a tenant,
+an OAuth app and admin consent to test honestly, and a connector that has
+never run against the real thing is a liability in a project whose other
+claims are all measured. The contract they would implement is the one above.
+
 ## Tech stack
 
 | Layer | Choice | Why |

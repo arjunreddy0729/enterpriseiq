@@ -136,6 +136,13 @@ class Document(Base):
     title: Mapped[str] = mapped_column(String(512), nullable=False)
     source_type: Mapped[str] = mapped_column(String(32), nullable=False)
     source_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    #: Which connector produced this document. Scopes a sync's deletion sweep:
+    #: without it there is no way to tell "the source no longer has this" from
+    #: "this came from somewhere else".
+    source: Mapped[str] = mapped_column(String(128), nullable=False, server_default="local-corpus")
+    #: The source's own change token (git blob SHA, ETag, mtime). When it is
+    #: unchanged we skip the download, the parse and the embed entirely.
+    revision: Mapped[str | None] = mapped_column(String(128))
     # sha256 of the normalised extracted text. Serves two purposes: exact
     # duplicate detection at ingest time, and cheap change detection on re-ingest
     # (unchanged hash -> skip parsing, chunking and embedding entirely).
@@ -172,6 +179,7 @@ class Document(Base):
             name="ck_documents_classification",
         ),
         Index("ix_documents_content_hash", "content_hash"),
+        Index("ix_documents_source", "source", "status"),
         Index("ix_documents_department", "department", "doc_type"),
         # Partial unique index: one live document per source URI, but soft-deleted
         # rows can pile up without blocking a re-ingest of the same path.
