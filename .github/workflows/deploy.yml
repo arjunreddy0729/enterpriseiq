@@ -37,7 +37,22 @@ jobs:
           HF_SPACE: ${{ vars.HF_SPACE }}
         run: |
           if [ -z "$HF_TOKEN" ] || [ -z "$HF_SPACE" ]; then
-            echo "HF_TOKEN or HF_SPACE not configured; skipping deploy."
+            missing=""
+            [ -z "$HF_TOKEN" ] && missing="secret HF_TOKEN"
+            [ -z "$HF_SPACE" ] && missing="${missing:+$missing and }variable HF_SPACE"
+
+            # Skip, but loudly. A green check that deployed nothing looks
+            # exactly like one that did, which is how this workflow reported
+            # eleven consecutive successes while no Space ever existed.
+            echo "::warning title=Demo NOT deployed::Skipped: $missing not set. See docs/deploy.md."
+            {
+              echo "### :warning: Demo NOT deployed"
+              echo
+              echo "Skipped because **$missing** is not set under"
+              echo "Settings → Secrets and variables → Actions."
+              echo
+              echo "Setup steps: \`docs/deploy.md\` → One-time setup."
+            } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 
@@ -62,4 +77,8 @@ jobs:
           git add -A
           git commit -q -m "Deploy ${sha} from GitHub"
           git push -q --force "https://user:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE}" main
-          echo "Deployed to https://huggingface.co/spaces/${HF_SPACE}"
+          url="https://huggingface.co/spaces/${HF_SPACE}"
+          echo "Deployed ${sha} to ${url}"
+          echo "### Demo deployed" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Commit \`${sha}\` is live at ${url}" >> "$GITHUB_STEP_SUMMARY"
