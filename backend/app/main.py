@@ -14,6 +14,7 @@ from typing import Any
 
 from fastapi import Depends, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from app.api.errors import register_exception_handlers
 from app.api.routes import admin, auth, demo, health, query, search
@@ -88,6 +89,21 @@ def create_app() -> FastAPI:
 def configure_app(app: FastAPI) -> FastAPI:
     """Middleware, error handling and routes, on any FastAPI app."""
     settings = get_settings()
+
+    # Trust the proxy's X-Forwarded-* headers when an operator has declared one.
+    #
+    # Without this, Starlette builds absolute URLs from the scheme in the ASGI
+    # scope, which behind a TLS-terminating proxy is plain http. The visible
+    # symptom is a blank page: /demo issues its trailing-slash redirect to
+    # http://host/demo/, and a browser on an https page refuses to follow the
+    # downgrade. curl follows it happily, which is what makes this one hard to
+    # catch from the command line.
+    #
+    # Gated on forwarded_proxy_hops so trusting the headers is a deliberate
+    # deployment choice: when nothing is in front of the app, anyone could
+    # otherwise spoof the scheme and the client address.
+    if settings.forwarded_proxy_hops > 0:
+        app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
     app.add_middleware(
         CORSMiddleware,
