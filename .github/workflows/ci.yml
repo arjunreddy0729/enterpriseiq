@@ -17,8 +17,8 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -67,8 +67,8 @@ jobs:
       # without one, and that is worth enforcing. The leak suite checks the
       # generation path with a scripted stub model, so CI costs nothing.
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -78,7 +78,7 @@ jobs:
       - run: pip install -e ".[ml,dev]"
 
       # The embedding model (~440MB) is downloaded once and cached.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: .hf-cache
           key: hf-${{ hashFiles('backend/app/core/config.py') }}
@@ -104,6 +104,6 @@ jobs:
     name: Docker build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build API image
         run: docker build -t enterpriseiq-api:ci ./backend
